@@ -1,6 +1,7 @@
   INCLUDE "gbhw.inc"
   INCLUDE "ibmpc1.inc"
   INCLUDE "hram.inc"
+  INCLUDE "macros.inc"
 
   
 	SECTION	"Org $00",HOME[$00]
@@ -270,10 +271,36 @@ StopLCD:
 
   ret
 
+; b - byte
+; hl - address
+DrawHexByte:
+  ld c, 1
+  ld a, b
+  swap a
+.CharLoop
+  and $0f
+  cp 10
+  jr nc, .Alpha
+  add "0"
+  jr .Write
+.Alpha
+  add "A"-10
+.Write
+  ld [hli], a
+  ld a, c
+  cp 0
+  ld a, b
+  ld c, 0
+  jr nz, .CharLoop
+  ret
+  
+
 DrawCursor:
   ldh a, [hCursorY]
+  add 16 ; true 0
   ld [_OAMRAM], a ; y
   ldh a, [hCursorX]
+  add 8 ; true 0
   ld [_OAMRAM+1], a ; x
   ldh a, [hCursorSize]
   add $03
@@ -324,31 +351,42 @@ VBlank::
   ldh a, [hButtons]
   ld b, a
 
-  bit 4, b
+  bit PADB_RIGHT, b
   jr z, .noRight
   ldh a, [hCursorX]
   inc a
   ldh [hCursorX], a
 .noRight
-  bit 5, b
+  bit PADB_LEFT, b
   jr z, .noLeft
   ldh a, [hCursorX]
   dec a
   ldh [hCursorX], a
 .noLeft
-  bit 6, b
+  bit PADB_UP, b
   jr z, .noUp
   ldh a, [hCursorY]
   dec a
   ldh [hCursorY], a
 .noUp
-  bit 7, b
+  bit PADB_DOWN, b
   jr z, .noDown
   ldh a, [hCursorY]
   inc a
   ldh [hCursorY], a
 .noDown
   call DrawCursor
+
+  ldh a, [hCursorX]
+  ld b, a
+  coord hl, 18, 16
+  call DrawHexByte
+
+  ldh a, [hCursorY]
+  ld b, a
+  coord hl, 18, 17
+  call DrawHexByte
+
   reti
 
 Coincidence::
