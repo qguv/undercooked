@@ -218,6 +218,12 @@ begin::
   ldh [hCursorSize], a
   call DrawCursor
 
+; Frame counters
+  ld	a, 16
+  ldh [hFrameSkip], a
+  ld	a, 0
+  ldh [hFrameCounter], a
+
 ; Now we turn on the LCD display to view the results!
 
   ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
@@ -347,9 +353,28 @@ VBlank::
 ; draw using the second tileset
   ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
   ld      [rLCDC],a       ; Turn screen on
+
+  ; Check frame counter
+  ldh a, [hFrameCounter]
+  cp a, 0
+  jr z, .input
+  dec a
+  ldh [hFrameCounter], a
+  reti ; don't do anything until we rech 0
+
+.input
   call ReadJoypad
   ldh a, [hButtons]
   ld b, a
+
+  cp 0 ; no buttons
+  jr z, .nothing
+
+.something
+  ldh a, [hFrameSkip]
+  srl a
+  ldh [hFrameSkip], a
+  ldh [hFrameCounter], a
 
   bit PADB_RIGHT, b
   jr z, .noRight
@@ -387,6 +412,10 @@ VBlank::
   coord hl, 18, 17
   call DrawHexByte
 
+  reti
+.nothing
+  ld a, 16
+  ldh [hFrameSkip], a
   reti
 
 Coincidence::
