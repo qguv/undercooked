@@ -30,6 +30,7 @@ _RAM          EQU  $C000 ; $C000->$E000
 _HRAM         EQU  $F800 ; $F800->$FFFE
 _OAMRAM       EQU  $FE00 ; $FE00->$FE9F
 _AUD3WAVERAM  EQU  $FF30 ; $FF30->$FF3F
+_HIRAM        EQU  $FFA0 ; $FFA0->$FFFE
 
 ; --
 ; -- SRAM flags

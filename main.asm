@@ -1,5 +1,6 @@
   INCLUDE "gbhw.inc"
   INCLUDE "ibmpc1.inc"
+  INCLUDE "hram.inc"
 
   
 	SECTION	"Org $00",HOME[$00]
@@ -58,7 +59,7 @@ JOYPAD_VECT:
   nop
   jp      begin
 
-  ROM_HEADER      ROM_MBC1_RAM, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
+  ROM_HEADER      ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
   INCLUDE "memory.asm"
 
@@ -72,6 +73,8 @@ begin::
 
 	ld	a, %11100100 	; Window palette colors, from darkest to lightest
   ld      [rBGP],a        ; Setup the default background palette
+  ldh     [rOBP0],a		; set sprite pallette 0
+	ldh     [rOBP1],a   ; and 1
 
   ld      a,0
   ld      [rSCX],a
@@ -198,21 +201,39 @@ begin::
   ld      bc,32*2
   call    mem_Copy
 
+; Clear OAM
+  ld      a,$00
+  ld      hl,_OAMRAM
+  ld      bc,40*4
+  call    mem_Set
+
+; Cursor sprite
+  ld a, 64
+  ldh [hCursorX], a
+  ldh [hCursorY], a
+  ld	a, %11100100
+  ldh [hCursorColor], a
+  ld	a, 3
+  ldh [hCursorSize], a
+  call DrawCursor
+
 ; Now we turn on the LCD display to view the results!
 
-  ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJOFF
+  ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
   ld      [rLCDC],a       ; Turn screen on
 
 ; set up coincidence interrupt
-ld a, STATF_LYC
-ld [rSTAT], a ; coincindence flag
-ld a, 8*16
-ld [rLYC], a ; after 16 sprites
-ld a, IEF_VBLANK|IEF_LCDC
-ld [rIE], a
-ei
+  ld a, STATF_LYC
+  ld [rSTAT], a ; coincindence flag
+  ld a, 8*16
+  ld [rLYC], a ; after 16 sprites
+  ld a, IEF_VBLANK|IEF_LCDC
+  ld [rIE], a
+  ei
 
 .wait:
+  halt
+  nop
   jp      .wait
 
 Pointers:
@@ -249,17 +270,90 @@ StopLCD:
 
   ret
 
+DrawCursor:
+  ldh a, [hCursorY]
+  ld [_OAMRAM], a ; y
+  ldh a, [hCursorX]
+  ld [_OAMRAM+1], a ; x
+  ldh a, [hCursorSize]
+  add $03
+  ld [_OAMRAM+2], a ; sprite
+  ld a, 0
+  ld [_OAMRAM+3], a ; flags
+  ldh a, [hCursorColor]
+  ldh [rOBP0],a		; set sprite pallette 0
+  ret
+
+ReadJoypad:
+  LD A,P1F_5   ; <- bit 5 = $20
+  LD [rP1],A   ; <- select P14 by setting it low
+  LD A,[rP1]
+  LD A,[rP1]    ; <- wait a few cycles
+  CPL           ; <- complement A
+  AND $0F       ; <- get only first 4 bits
+  SWAP A        ; <- swap it
+  LD B,A        ; <- store A in B
+  LD A,P1F_4
+  LD [rP1],A    ; <- select P15 by setting it low
+  LD A,[rP1]
+  LD A,[rP1]
+  LD A,[rP1]
+  LD A,[rP1]
+  LD A,[rP1]
+  LD A,[rP1]    ; <- Wait a few MORE cycles
+  CPL           ; <- complement (invert)
+  AND $0F       ; <- get first 4 bits
+  OR B          ; <- put A and B together
+
+  ;LD B,A        ; <- store A in D
+  ;LD A,[hButtonsOld]  ; <- read old joy data from ram
+  ;XOR B         ; <- toggle w/current button bit
+  ;AND B         ; <- get current button bit back
+  LD [hButtons],A  ; <- save in new Joydata storage
+  ;LD A,B        ; <- put original value in A
+  ;LD [hButtonsOld],A  ; <- store it as old joy data
+  LD A,P1F_5|P1F_4    ; <- deselect P14 and P15
+  LD [rP1],A    ; <- RESET Joypad
+  RET           ; <- Return from Subroutine
+
 VBlank::
-	;ld	a, %11100100 ; Window palette colors, from darkest to lightest
-  ;ld      [rBGP],a ; Setup the default background palette
-  ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJOFF
+; draw using the second tileset
+  ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
   ld      [rLCDC],a       ; Turn screen on
+  call ReadJoypad
+  ldh a, [hButtons]
+  ld b, a
+
+  bit 4, b
+  jr z, .noRight
+  ldh a, [hCursorX]
+  inc a
+  ldh [hCursorX], a
+.noRight
+  bit 5, b
+  jr z, .noLeft
+  ldh a, [hCursorX]
+  dec a
+  ldh [hCursorX], a
+.noLeft
+  bit 6, b
+  jr z, .noUp
+  ldh a, [hCursorY]
+  dec a
+  ldh [hCursorY], a
+.noUp
+  bit 7, b
+  jr z, .noDown
+  ldh a, [hCursorY]
+  inc a
+  ldh [hCursorY], a
+.noDown
+  call DrawCursor
   reti
 
 Coincidence::
-	;ld	a, %00011011 ; Inverse colors
-  ;ld      [rBGP],a ; Setup the default background palette
-  ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJOFF
+; draw the UI using the first tileset
+  ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
   ld      [rLCDC],a       ; Turn screen on
 reti
 
