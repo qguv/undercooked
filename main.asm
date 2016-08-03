@@ -219,7 +219,7 @@ begin::
   call DrawCursor
 
 ; Frame counters
-  ld	a, 16
+  ld	a, 32
   ldh [hFrameSkip], a
   ld	a, 0
   ldh [hFrameCounter], a
@@ -354,14 +354,6 @@ VBlank::
   ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
   ld      [rLCDC],a       ; Turn screen on
 
-  ; Check frame counter
-  ldh a, [hFrameCounter]
-  cp a, 0
-  jr z, .input
-  dec a
-  ldh [hFrameCounter], a
-  reti ; don't do anything until we rech 0
-
 .input
   call ReadJoypad
   ldh a, [hButtons]
@@ -369,6 +361,15 @@ VBlank::
 
   cp 0 ; no buttons
   jr z, .nothing
+
+  ; Check frame counter
+  ldh a, [hFrameCounter]
+  cp a, 0
+  jr z, .something
+  dec a
+  ldh [hFrameCounter], a
+  reti ; don't do anything until we rech 0
+
 
 .something
   ldh a, [hFrameSkip]
@@ -414,8 +415,10 @@ VBlank::
 
   reti
 .nothing
-  ld a, 16
+  ld a, 32
   ldh [hFrameSkip], a
+  ld a, 0
+  ldh [hFrameCounter], a
   reti
 
 Coincidence::
