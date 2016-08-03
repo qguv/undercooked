@@ -5,3 +5,5 @@ hCursorSize EQU _HIRAM+3
 hButtons EQU _HIRAM+4
 hFrameCounter EQU _HIRAM+5
 hFrameSkip EQU _HIRAM+6
+hMode EQU _HIRAM+7
+hSelectionIndex EQU _HIRAM+8

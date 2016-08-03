@@ -67,6 +67,29 @@ JOYPAD_VECT:
 TileData:
   chr_IBMPC1      2,3
 
+Pointers:
+  db %00000000
+  db %10000000
+  db %11000000
+  db %11110000
+  db %11111111
+
+Corner:
+  db %11111000, %11111000
+  db %11111000, %10000000
+  db %11000000, %10000000
+  db %11000000, %10000000
+  db %11000000, %10000000
+  db %00000000, %00000000
+  db %00000000, %00000000
+  db %00000000, %00000000
+
+GUI:
+db $00, $00, $01, $01, $02, $02, $03, $03, "        X:              "
+db $00, $00, $01, $01, $02, $02, $03, $03,  " ", $03, " ", $04, " ", $05, " ", $06,"Y:  "
+
+
+
 begin::
   di
   ld      sp,$ffff
@@ -75,6 +98,7 @@ begin::
 	ld	a, %11100100 	; Window palette colors, from darkest to lightest
   ld      [rBGP],a        ; Setup the default background palette
   ldh     [rOBP0],a		; set sprite pallette 0
+	ld	a, %11100000
 	ldh     [rOBP1],a   ; and 1
 
   ld      a,0
@@ -154,6 +178,13 @@ begin::
   dec c
   jr nz, .PointerLoop
   
+; Croner sprite
+  ;ld de, hl
+  ld d, h
+  ld e, l
+  ld hl, Corner
+  ld bc, 16
+  call mem_Copy
 
 
 ; printable ascii
@@ -218,6 +249,13 @@ begin::
   ldh [hCursorSize], a
   call DrawCursor
 
+; Selection sprite
+  ld a, 10
+  ldh [hSelectionIndex], a
+  ld a, 1
+  ldh [hMode], a
+  call DrawSelection
+
 ; Frame counters
   ld	a, 32
   ldh [hFrameSkip], a
@@ -242,18 +280,6 @@ begin::
   halt
   nop
   jp      .wait
-
-Pointers:
-  db %00000000
-  db %10000000
-  db %11000000
-  db %11110000
-  db %11111111
-
-GUI:
-db $00, $00, $01, $01, $02, $02, $03, $03, "        X:              "
-db $00, $00, $01, $01, $02, $02, $03, $03,  " ", $03, " ", $04, " ", $05, " ", $06,"Y:  "
-
 
 ; *** Turn off the LCD display ***
 
@@ -317,6 +343,61 @@ DrawCursor:
   ldh [rOBP0],a		; set sprite pallette 0
   ret
 
+DrawSelection:
+  ldh a, [hSelectionIndex]
+  sla a ; a*16
+  sla a
+  sla a
+  sla a
+  ld b, a ; x
+  ld a, 8*16
+  ld c, a ; y
+  ld a, 0
+  ld d, a ; flips
+  ld hl, _OAMRAM+4
+  call DrawCorner
+
+  ld a, b
+  add 8
+  ld b, a ; x
+  ld a, OAMF_XFLIP
+  ld d, a ; flips
+  call DrawCorner
+  
+  ld a, c
+  add 8
+  ld c, a ; y
+  ld a, OAMF_XFLIP|OAMF_YFLIP
+  ld d, a ; flips
+  call DrawCorner
+  
+  ld a, b
+  sub 8
+  ld b, a ; y
+  ld a, OAMF_YFLIP
+  ld d, a ; flips
+  call DrawCorner
+  
+  ret
+
+; b - x
+; c - y
+; d - flips
+; hl - address
+DrawCorner:
+  ld a, c
+  add 16 ; true y
+  ld [hli], a ; y
+  ld a, b
+  add 8 ; true x
+  ld [hli], a ; x
+  ld a, $07
+  ld [hli], a ; sprite
+  ld a, d
+  or OAMF_PAL1 ; use first pallete
+  ld [hli], a ; flags
+  ret
+
 ReadJoypad:
   LD A,P1F_5   ; <- bit 5 = $20
   LD [rP1],A   ; <- select P14 by setting it low
@@ -349,34 +430,25 @@ ReadJoypad:
   LD [rP1],A    ; <- RESET Joypad
   RET           ; <- Return from Subroutine
 
-VBlank::
-; draw using the second tileset
-  ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
-  ld      [rLCDC],a       ; Turn screen on
+MoveSelection:
+  ldh a, [hSelectionIndex]
 
-.input
-  call ReadJoypad
-  ldh a, [hButtons]
-  ld b, a
-
-  cp 0 ; no buttons
-  jr z, .nothing
-
-  ; Check frame counter
-  ldh a, [hFrameCounter]
-  cp a, 0
-  jr z, .something
+  bit PADB_RIGHT, b
+  jr z, .noRight
+  inc a
+.noRight
+  bit PADB_LEFT, b
+  jr z, .noLeft
   dec a
-  ldh [hFrameCounter], a
-  reti ; don't do anything until we rech 0
+.noLeft
+  
+  and %111
+  ldh [hSelectionIndex], a
+  call DrawSelection
 
+  ret
 
-.something
-  ldh a, [hFrameSkip]
-  srl a
-  ldh [hFrameSkip], a
-  ldh [hFrameCounter], a
-
+MoveCursor:
   bit PADB_RIGHT, b
   jr z, .noRight
   ldh a, [hCursorX]
@@ -413,6 +485,49 @@ VBlank::
   coord hl, 18, 17
   call DrawHexByte
 
+  ret
+
+VBlank::
+; draw using the second tileset
+  ld      a,LCDCF_ON|LCDCF_BG8800|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON
+  ld      [rLCDC],a       ; Turn screen on
+
+.input
+  call ReadJoypad
+  ldh a, [hButtons]
+  ld b, a ; b contain pressed buttons, don't mess it up
+
+  cp 0 ; no buttons
+  jr z, .nothing
+
+  ; Check frame counter
+  ldh a, [hFrameCounter]
+  cp a, 0
+  jr z, .something
+  dec a
+  ldh [hFrameCounter], a
+  reti ; don't do anything until we rech 0
+
+
+.something
+  ldh a, [hFrameSkip]
+  srl a
+  ldh [hFrameSkip], a
+  ldh [hFrameCounter], a
+
+  bit PADB_SELECT, b
+  jr z, .noSelect
+  ld a, 0
+  ldh [hSelectionIndex], a
+  ldh [hMode], a
+.noSelect
+  ldh a, [hMode]
+  cp 0
+  jr nz, .drawMode
+  call MoveSelection
+  reti
+.drawMode
+  call MoveCursor
   reti
 .nothing
   ld a, 32
