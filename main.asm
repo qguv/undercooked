@@ -74,6 +74,12 @@ Pointers:
   db %11110000
   db %11111111
 
+Colors:
+  db %00100100
+  db %01100100
+  db %10100100
+  db %11100100
+
 Corner:
   db %11111000, %11111000
   db %11111000, %10000000
@@ -444,8 +450,34 @@ MoveSelection:
   
   and %111
   ldh [hSelectionIndex], a
-  call DrawSelection
 
+  ret
+
+ChangeBrush:
+  bit PADB_A, b
+  ret z
+
+  ldh a, [hSelectionIndex]
+  cp 4
+  jp c, .changeColor
+  sub 4
+  ldh [hCursorSize], a
+  call DrawCursor
+  jr .setMode
+
+.changeColor
+  ld hl, Colors
+  ld d, 0
+  ld e, a
+  add hl, de
+  ld a, [hl]
+  ldh [hCursorColor], a
+  call DrawCursor
+.setMode
+  ld a, 1
+  ldh [hMode], a
+  ld a, 10
+  ldh [hSelectionIndex], a
   ret
 
 MoveCursor:
@@ -453,24 +485,28 @@ MoveCursor:
   jr z, .noRight
   ldh a, [hCursorX]
   inc a
+  and %1111111
   ldh [hCursorX], a
 .noRight
   bit PADB_LEFT, b
   jr z, .noLeft
   ldh a, [hCursorX]
   dec a
+  and %1111111
   ldh [hCursorX], a
 .noLeft
   bit PADB_UP, b
   jr z, .noUp
   ldh a, [hCursorY]
   dec a
+  and %1111111
   ldh [hCursorY], a
 .noUp
   bit PADB_DOWN, b
   jr z, .noDown
   ldh a, [hCursorY]
   inc a
+  and %1111111
   ldh [hCursorY], a
 .noDown
   call DrawCursor
@@ -485,6 +521,9 @@ MoveCursor:
   coord hl, 18, 17
   call DrawHexByte
 
+  ret
+
+ApplyPaint:
   ret
 
 VBlank::
@@ -508,7 +547,6 @@ VBlank::
   ldh [hFrameCounter], a
   reti ; don't do anything until we rech 0
 
-
 .something
   ldh a, [hFrameSkip]
   srl a
@@ -525,9 +563,12 @@ VBlank::
   cp 0
   jr nz, .drawMode
   call MoveSelection
+  call ChangeBrush
+  call DrawSelection
   reti
 .drawMode
   call MoveCursor
+  call ApplyPaint
   reti
 .nothing
   ld a, 32
