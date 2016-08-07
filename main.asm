@@ -210,19 +210,21 @@ begin::
   ld      [rSRAM], a
 
 ; initilise tiles
-  ld      b,0 ; row
+; TODO DRY this shit up
+; .... but how?
+  ld      b,8 ; row
   ld      hl,_SCRN0
 .RowLoop
   ld      c,0 ; col
 .ColLoop
   ld a, b
+  sla a ; row*16
   sla a
   sla a
   sla a
-  sla a
-  add c
+  add c ; row*16+col
 
-  ld [hli], a
+  ld [hli],a
   inc c
   ld a, c
   cp 32
@@ -232,9 +234,30 @@ begin::
   cp 16
   jp nz, .RowLoop
 
+; negative tiles
+  ld      b,0 ; row
+.RowLoop2
+  ld      c,0 ; col
+.ColLoop2
+  ld a, b
+  sla a ; row*16
+  sla a
+  sla a
+  sla a
+  add c ; row*16+col
+
+  ld [hli],a
+  inc c
+  ld a, c
+  cp 32
+  jp nz, .ColLoop2
+  inc b
+  ld a, b
+  cp 8
+  jp nz, .RowLoop2
+
 ; GUI
-  ld      d,h
-  ld      e,l
+  coord de, 0, 16
   ld      hl,GUI
   ld      bc,32*2
   call    mem_Copy
@@ -309,11 +332,11 @@ StopLCD:
 
   ret
 
-; b - byte
+; c - byte
 ; hl - address
 DrawHexByte:
-  ld c, 1
-  ld a, b
+  ld d, 1
+  ld a, c
   swap a
 .CharLoop
   and $0f
@@ -325,10 +348,10 @@ DrawHexByte:
   add "A"-10
 .Write
   ld [hli], a
-  ld a, c
+  ld a, d
   cp 0
-  ld a, b
-  ld c, 0
+  ld a, c
+  ld d, 0
   jr nz, .CharLoop
   ret
   
@@ -512,18 +535,68 @@ MoveCursor:
   call DrawCursor
 
   ldh a, [hCursorX]
-  ld b, a
+  ld c, a
   coord hl, 18, 16
   call DrawHexByte
 
   ldh a, [hCursorY]
-  ld b, a
+  ld c, a
   coord hl, 18, 17
   call DrawHexByte
 
   ret
 
 ApplyPaint:
+  bit PADB_A, b
+  ret z
+
+; Find tile
+  ldh a, [hCursorY]
+  and %11111000
+  sla a ; a/8*16=a*2=a<<1
+  ld b, a
+  ldh a, [hCursorX]
+  sra a ; a/8=a>>3
+  sra a
+  sra a
+  add b
+  ld h, 0 ; hl = a = y/8*16+x/8
+  ld l, a
+  add hl, hl ; hl*16=hl<<4
+  add hl, hl
+  add hl, hl
+  add hl, hl
+  ld bc, _TILE1
+  add hl, bc ; hl = tile under cursor
+
+; find row
+  ldh a, [hCursorY]
+  and %111
+  sla a
+  ld b, 0
+  ld c, a
+  add hl, bc ; hl = row under cursor
+
+; shift brush to col
+  ld a, [Pointers+1] ; TODO biger cursors
+  ld b, a
+  ldh a, [hCursorX]
+  and %111
+  jr .skip
+.shiftLoop
+  rr b
+  dec a
+.skip
+  cp 0
+  jr nz, .shiftLoop
+
+; actually apply paint
+  ld a, [hl]
+  or b
+  ld [hli], a
+  ld a, [hl]
+  or b
+  ld [hli], a
   ret
 
 VBlank::
