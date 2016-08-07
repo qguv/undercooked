@@ -368,6 +368,18 @@ DrawCursor:
   ld [_OAMRAM+3], a ; flags
   ldh a, [hCursorColor]
   ldh [rOBP0],a		; set sprite pallette 0
+
+; update coordinates
+  ldh a, [hCursorX]
+  ld c, a
+  coord hl, 18, 16
+  call DrawHexByte
+
+  ldh a, [hCursorY]
+  ld c, a
+  coord hl, 18, 17
+  call DrawHexByte
+
   ret
 
 DrawSelection:
@@ -483,7 +495,6 @@ ChangeBrush:
   jp c, .changeColor
   sub 4
   ldh [hCursorSize], a
-  call DrawCursor
   jr .setMode
 
 .changeColor
@@ -493,55 +504,79 @@ ChangeBrush:
   add hl, de
   ld a, [hl]
   ldh [hCursorColor], a
-  call DrawCursor
 .setMode
   ld a, 1
   ldh [hMode], a
   ld a, 10
   ldh [hSelectionIndex], a
+
+; align pointer
+  call BrushHeight
+  ld a, c
+  sub 1
+  cpl
+  ld c, a
+  ldh a, [hCursorX]
+  and c
+  ldh [hCursorX], a
+  ldh a, [hCursorY]
+  and c
+  ldh [hCursorY], a
+
+  call DrawCursor
   ret
 
 MoveCursor:
+; get increment
+  call BrushHeight
+; move
   bit PADB_RIGHT, b
   jr z, .noRight
   ldh a, [hCursorX]
-  inc a
+  add c
   and %1111111
   ldh [hCursorX], a
 .noRight
   bit PADB_LEFT, b
   jr z, .noLeft
   ldh a, [hCursorX]
-  dec a
+  sub c
   and %1111111
   ldh [hCursorX], a
 .noLeft
   bit PADB_UP, b
   jr z, .noUp
   ldh a, [hCursorY]
-  dec a
+  sub c
   and %1111111
   ldh [hCursorY], a
 .noUp
   bit PADB_DOWN, b
   jr z, .noDown
   ldh a, [hCursorY]
-  inc a
+  add c
   and %1111111
   ldh [hCursorY], a
 .noDown
   call DrawCursor
 
-  ldh a, [hCursorX]
-  ld c, a
-  coord hl, 18, 16
-  call DrawHexByte
+  ret
 
-  ldh a, [hCursorY]
+; c -> height
+BrushHeight:
+; get brush height
+; why did I define this so backwards?
+  ldh a, [hCursorSize]
   ld c, a
-  coord hl, 18, 17
-  call DrawHexByte
-
+  ld a, 3
+  sub c
+  ld c, 1
+  cp 0
+  ret z
+.widthLoop
+  sla c
+  dec a
+  jr nz, .widthLoop
   ret
 
 ApplyPaint:
@@ -599,19 +634,7 @@ ApplyPaint:
 .skip
   jr nz, .shiftLoop
 
-; get brush height
-; why did I define this so backwards?
-  ldh a, [hCursorSize]
-  ld c, a
-  ld a, 3
-  sub c
-  ld c, 1
-  cp 0
-  jr z, .paintLoop
-.widthLoop
-  sla c
-  dec a
-  jr nz, .widthLoop
+  call BrushHeight
 
 ; actually apply paint
 .paintLoop ; broken at tile edges
