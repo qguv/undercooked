@@ -318,14 +318,12 @@ StopLCD:
   ret     nc              ; Screen is off already. Exit.
 
 ; Loop until we are in VBlank
-
 .wait:
   ld      a,[rLY]
   cp      145             ; Is display on scan line 145 yet?
   jr      nz,.wait        ; no, keep waiting
 
 ; Turn off the LCD
-
   ld      a,[rLCDC]
   res     7,a             ; Reset bit 7 of LCDC
   ld      [rLCDC],a
@@ -577,8 +575,20 @@ ApplyPaint:
   ld c, a
   add hl, bc ; hl = row under cursor
 
+; get brush
+; Pointers+4-hCursorSize
+  ldh a, [hCursorSize]
+  ld b, a
+  ld de, Pointers+4
+  ld a, e ; de - b
+  sub b
+  ld e, a
+  ld a, d
+  sbc 0
+  ld d, a
+  ld a, [de]
+
 ; shift brush to col
-  ld a, [Pointers+1] ; TODO biger cursors
   ld b, a
   ldh a, [hCursorX]
   and %111
@@ -587,16 +597,31 @@ ApplyPaint:
   rr b
   dec a
 .skip
-  cp 0
   jr nz, .shiftLoop
 
+; get brush height
+; why did I define this so backwards?
+  ldh a, [hCursorSize]
+  ld c, a
+  ld a, 3
+  sub c
+  ld c, 1
+.widthLoop
+  sla c
+  dec a
+  jr nz, .widthLoop
 ; actually apply paint
+.paintLoop ; broken at tile edges
   ld a, [hl]
   or b
   ld [hli], a
   ld a, [hl]
   or b
   ld [hli], a
+  ld a, c
+  dec c
+  jr nz, .paintLoop
+
   ret
 
 VBlank::
