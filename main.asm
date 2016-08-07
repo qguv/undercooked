@@ -606,18 +606,44 @@ ApplyPaint:
   ld a, 3
   sub c
   ld c, 1
+  cp 0
+  jr z, .paintLoop
 .widthLoop
   sla c
   dec a
   jr nz, .widthLoop
+
 ; actually apply paint
 .paintLoop ; broken at tile edges
+  ldh a, [hCursorColor]
+  bit 6, a ; is msb set?
+  jr z, .clearMSB
   ld a, [hl]
   or b
   ld [hli], a
+  jr .LSB
+.clearMSB
+  ld a, [hl]
+  cpl
+  or b
+  cpl
+  ld [hli], a
+.LSB
+  ldh a, [hCursorColor]
+  bit 7, a ; is msb set?
+  jr z, .clearLSB
   ld a, [hl]
   or b
   ld [hli], a
+  jr .next
+.clearLSB
+  ld a, [hl]
+  cpl
+  or b
+  cpl
+  ld [hli], a
+
+.next
   ld a, c
   dec c
   jr nz, .paintLoop
