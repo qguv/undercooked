@@ -330,6 +330,30 @@ StopLCD:
 
   ret
 
+SaveSRAM:
+; turn of LCD to safely copy bulk data from vram
+  ;call StopLCD
+; already in vblank interrupt
+; Turn off the LCD
+  ld      a,[rLCDC]
+  res     7,a             ; Reset bit 7 of LCDC
+  ld      [rLCDC],a
+
+  ld      a,SRAM_ENABLE
+  ld      [rSRAM], a
+  ld      de,_SRAM
+  ld      hl,_TILE1
+  ld      bc,16*$ff
+  call    mem_Copy
+  ld      a,SRAM_DISABLE
+  ld      [rSRAM], a
+  
+  ld      a,[rLCDC]
+  set     7,a             ; set bit 7 of LCDC
+  ld      [rLCDC],a
+
+  ret
+
 ; c - byte
 ; hl - address
 DrawHexByte:
@@ -700,6 +724,10 @@ VBlank::
   ldh [hFrameSkip], a
   ldh [hFrameCounter], a
 
+  bit PADB_START, b
+  jr z, .noStart
+  call SaveSRAM
+.noStart
   bit PADB_SELECT, b
   jr z, .noSelect
   ld a, 0
