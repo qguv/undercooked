@@ -361,6 +361,32 @@ VBlank::
   inc a
   ld [_OAMRAM+13], a
 
+  ld a, [hFrameCounter]
+  inc a
+  ld [hFrameCounter], a
+  and %111111
+  jr nz, .skipFlip
+  ld a, [_OAMRAM+3]
+  xor a, OAMF_PAL1|OAMF_YFLIP
+  ld [_OAMRAM+3], a
+  ld [_OAMRAM+7], a
+  ld [_OAMRAM+11], a
+  ld [_OAMRAM+15], a
+
+  ld a, [_OAMRAM+2]
+  xor a, 2
+  ld [_OAMRAM+2], a
+  ld a, [_OAMRAM+6]
+  xor a, 2
+  ld [_OAMRAM+6], a
+  ld a, [_OAMRAM+10]
+  xor a, 2
+  ld [_OAMRAM+10], a
+  ld a, [_OAMRAM+14]
+  xor a, 2
+  ld [_OAMRAM+14], a
+.skipFlip
+
   ld a, [hScrolling]
   bit 0, a
   jr nz, .scrolling
