@@ -111,6 +111,56 @@ db "                    ", "            "
 db "                    ", "            "
 db "                    ", "            "
 db "                    ", "            "
+; slide 3
+db "                    ", "            "
+db "      Magic         ", "            "
+db "      Mushroom      ", "            "
+db "   Meeps            ", "            "
+db "        Mips        ", "            "
+db "            Maps    ", "            "
+db "                    ", "            "
+db "     Flips          ", "            "
+db "          Flaps     ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "               Flow ", "            "
+db "                    ", "            "
+db "   Flap             ", "            "
+db "                    ", "            "
+db "       Grap         ", "            "
+; slide 4
+db "                    ", "            "
+db "    Fietspompen     ", "            "
+db "       en shit      ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+; slide 5
+db "                    ", "            "
+db "   Dingen en zo     ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
 db "                    ", "            "
 
 begin::
@@ -127,8 +177,9 @@ begin::
   ld      a,0
   ld      [rSCX],a
   ld      [rSCY],a
-  ld [hSlideNumber], a
   ld [hScrolling], a
+  ld      a,1
+  ld [hSlideNumber], a
   ld      a,7
   ld      [rWX],a
   ld      a,128
@@ -168,6 +219,25 @@ begin::
 .wait:
   halt
   nop
+
+  ld a, [hScrolling]
+  bit 1, a
+  jr z, .wait
+
+  ld      de,_SCRN0
+  ld a, [hSlideNumber]
+  bit 0, a
+  jr z, .evenSlide
+  ld      de,_SCRN0+(16*32)
+.evenSlide
+  sla a
+  ld b, a
+  ld c, 0
+  ld      hl,Slides
+  add hl, bc
+  ld      bc,32*16
+  call    mem_Copy
+
   jp      .wait
 
 ; *** Turn off the LCD display ***
@@ -249,7 +319,7 @@ ReadJoypad:
 
 VBlank::
   ld a, [hScrolling]
-  and a
+  bit 0, a
   jr nz, .scrolling
   call ReadJoypad
   ldh a, [hButtons]
@@ -260,7 +330,7 @@ VBlank::
   ld a, [hSlideNumber]
   inc a
   ld [hSlideNumber], a
-  add a, "1"
+  add a, "0"
   ld [_SCRN1+49], a
 .noA
   reti
@@ -272,12 +342,8 @@ VBlank::
   jr z, .stopScrolling
   reti
 .stopScrolling
-  ld a, 0
+  ld a, 2
   ld [hScrolling], a
-  ld      hl,Slides
-  ld      de,_SCRN0
-  ld      bc,32*32
-  call    mem_Copy
   reti
 
 ;* End of File *
