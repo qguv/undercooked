@@ -1,9 +1,4 @@
-hCursorX EQU _HIRAM
-hCursorY EQU _HIRAM+1
-hCursorColor EQU _HIRAM+2
-hCursorSize EQU _HIRAM+3
-hButtons EQU _HIRAM+4
-hFrameCounter EQU _HIRAM+5
-hFrameSkip EQU _HIRAM+6
-hMode EQU _HIRAM+7
-hSelectionIndex EQU _HIRAM+8
+hButtons EQU _HIRAM
+hFrameCounter EQU _HIRAM+1
+hScrolling EQU _HIRAM+2
+hSlideNumber EQU _HIRAM+3

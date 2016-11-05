@@ -28,10 +28,7 @@ Makefile: ;
 	rgblink -n $*.sym -o $@ $^
 	rgbfix -v -p 0 $@
 
-main.2bpp: main.sav
-	head -c4096 main.sav > main.2bpp
-
 %.2bpp: %.png  ; @$(2bpp) $<
 %.1bpp: %.png  ; @$(1bpp) $<
 %.pic:  %.2bpp ; @$(pic)  $<
-%.png:  %.2bpp ; @$(png)  $<
+#%.png:  %.2bpp ; @$(png)  $<
