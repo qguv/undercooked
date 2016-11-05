@@ -72,9 +72,27 @@ Sprites:
   INCBIN "pilogo.2bpp"
   INCBIN "gb.2bpp"
 
+SprAttr:
+db $60, $10, $8, $0
+db $60, $18, $9, $0
+db $68, $10, $A, $0
+db $68, $18, $B, $0
+
 Window:
 db $CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD,$CD, "            "
-db "Demo    Slide    1/5"
+db "Demo    Slide    1/5", "            "
+db "                    ", "            "
+db " Scrollable window- ", "            "
+db " overlay            ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
+db "                    ", "            "
 
 Slides:
 ; slide 1
@@ -88,11 +106,11 @@ db "     ",$18,"     ",$18,"        ", "            "
 db "                    ", "            "
 db "    GPU   CPU       ", "            "
 db "                    ", "            "
+db "                    ", "            "
+db $10," 1000+ lines of C++", "            "
 db $10," 500+ lines of VHDL", "            "
-db $10," ???+ lines of C++ ", "            "
-db $10," 300+ lines of Z80 ", "            "
-db "     ASM (this demo)", "            "
-db $10," 8 clicky buttons  ", "            "
+db $10," 300+ lines of ASM ", "            "
+db "  (this demo)       ", "            "
 db "                    ", "            "
 ; slide 2
 db "                    ", "            "
@@ -119,6 +137,7 @@ db "  Runs modified em- ", "            "
 db "  ulator (Gambatte) ", "            "
 db "  Writes following  ", "            "
 db "  VRAM data to SPI: ", "            "
+db "                    ", "            "
 db $10," Tile data         ", "            "
 db "  $8000-$97FF       ", "            "
 db $10," Tile maps         ", "            "
@@ -127,36 +146,36 @@ db $10," Sprite Attributes ", "            "
 db "  $FE00-$FE9F       ", "            "
 db $10," Some CPU registers", "            "
 db "                    ", "            "
-db "                    ", "            "
 ; slide 4
 db "                    ", "            "
-db "    Fietspompen     ", "            "
-db "       en shit      ", "            "
+db "      DE1-SoC       ", "            "
 db "                    ", "            "
+db " Drives VGA at 60Hz ", "            "
 db "                    ", "            "
+db " Async SPI slave    ", "            "
+db " using 2-port RAM   ", "            "
 db "                    ", "            "
+db " Seperate RAM parts ", "            "
+db " for parallel reads ", "            "
 db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
+db " (Almost) perfect   ", "            "
+db " rendering of all   ", "            "
+db " Game Boy features  ", "            "
 db "                    ", "            "
 db "                    ", "            "
 ; slide 5
 db "                    ", "            "
-db "   Dingen en zo     ", "            "
+db "      Features      ", "            "
 db "                    ", "            "
+db $10," Scroling BG layer ", "            "
+db "  ", $F8," wth palletes    ", "            "
+db $10," Sprite layer with ", "            "
+db "  ", $F8," palletes        ", "            "
+db "  ", $F8," transparency    ", "            "
+db "  ", $F8," flipping        ", "            "
 db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
-db "                    ", "            "
+db $DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF, "            "
+db $DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF,$DC,$DF, "            "
 db "                    ", "            "
 db "                    ", "            "
 db "                    ", "            "
@@ -171,7 +190,7 @@ begin::
   ld	a, %11100100 	; Window palette colors, from darkest to lightest
   ld      [rBGP],a        ; Setup the default background palette
   ldh     [rOBP0],a		; set sprite pallette 0
-  ld	a, %11100000
+  ld	a, %00011011
   ldh     [rOBP1],a   ; and 1
 
   ld      a,0
@@ -205,7 +224,18 @@ begin::
   ; init window
   ld      hl,Window
   ld      de,_SCRN1
-  ld      bc,32*2
+  ld      bc,32*5
+  call    mem_Copy
+
+; Clear OAM
+  ld      a,$00
+  ld      hl,_OAMRAM
+  ld      bc,40*4
+  call    mem_Set
+; load sprites
+  ld      hl,SprAttr
+  ld      de,_OAMRAM
+  ld      bc,4*4
   call    mem_Copy
 
   ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_WIN9C00|LCDCF_WINON
@@ -318,9 +348,24 @@ ReadJoypad:
 
 
 VBlank::
+  ld a, [_OAMRAM+1]
+  inc a
+  ld [_OAMRAM+1], a
+  ld a, [_OAMRAM+5]
+  inc a
+  ld [_OAMRAM+5], a
+  ld a, [_OAMRAM+9]
+  inc a
+  ld [_OAMRAM+9], a
+  ld a, [_OAMRAM+13]
+  inc a
+  ld [_OAMRAM+13], a
+
   ld a, [hScrolling]
   bit 0, a
   jr nz, .scrolling
+  bit 2, a
+  jr nz, .windowScrolling
   call ReadJoypad
   ldh a, [hButtons]
   bit PADB_A, a
@@ -341,7 +386,23 @@ VBlank::
   and %1111111
   jr z, .stopScrolling
   reti
+.windowScrolling
+  ld a, [rWY]
+  cp a, 104
+  jr z, .stopScrolling
+  dec a
+  ld [rWY], a
 .stopScrolling
+  ld a, [hSlideNumber]
+  cp a, 5
+  jr nz, .not5
+  ld a, 4
+  ld [hScrolling], a
+  ld a, [rLCDC]
+  or a, LCDCF_OBJON
+  ld [rLCDC],a
+  reti
+.not5
   ld a, 2
   ld [hScrolling], a
   reti
