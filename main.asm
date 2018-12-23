@@ -3,13 +3,13 @@
   INCLUDE "hram.inc"
   INCLUDE "macros.inc"
 
-  
+
 	SECTION	"Org $00",ROM0[$00]
-RST_00:	
+RST_00:
 	jp	$100
 
 	SECTION	"Org $08",ROM0[$08]
-RST_08:	
+RST_08:
 	jp	$100
 
 	SECTION	"Org $10",ROM0[$10]
@@ -39,7 +39,7 @@ RST_38:
 	SECTION	"V-Blank IRQ Vector",ROM0[$40]
 VBL_VECT:
 	jp VBlank
-	
+
 	SECTION	"LCD IRQ Vector",ROM0[$48]
 LCD_VECT:
 	reti
