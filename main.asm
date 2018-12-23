@@ -67,18 +67,39 @@ JOYPAD_VECT:
 TileData:
   chr_IBMPC1      1,8
 
-Text:
-  db "Hello world"
+Found1_16:
+  db      "    You found my"
+
+Found2_14:
+  db      "     Game Boy!"
+
+Found3_19:
+  db      "  Please return to:"
+
+Address1_18:
+  db      "  Quint Guvernator"
+
+Address2_19:
+  db      "Gerard Doustraat 16"
+
+Address3_19:
+  db      "1072CA Amsterdam NL"
+
+Phone1_17:
+  db      "  +1 757 606 0005"
+
+Phone2_17:
+  db      "  WhatsApp or SMS"
 
 begin::
   di
   ld      sp,$ffff
   call    StopLCD
 
-  ld	a, %11100100 	; Window palette colors, from darkest to lightest
+  ld	  a, %11100100 	; Window palette colors, from darkest to lightest
   ld      [rBGP],a        ; Setup the default background palette
   ldh     [rOBP0],a		; set sprite pallette 0
-  ld	a, %00011011
+  ld	  a, %00011011
   ldh     [rOBP1],a   ; and 1
 
 ; printable ascii
@@ -93,11 +114,58 @@ begin::
   ld      bc,32*32
   call    mem_Set
 
-  ; init screen
-  ld      hl,Text
-  ld      de,_SCRN0
-  ld      bc,11
+  ; draw text on screen
+  ld      hl,Found1_16
+  ld      de,_SCRN0+$40
+  ld      bc,16
   call    mem_Copy
+  ld      hl,Found2_14
+  ld      de,_SCRN0+$60
+  ld      bc,14
+  call    mem_Copy
+  ld      hl,Found3_19
+  ld      de,_SCRN0+$a0
+  ld      bc,19
+  call    mem_Copy
+  ld      hl,Address1_18
+  ld      de,_SCRN0+$e0
+  ld      bc,18
+  call    mem_Copy
+  ld      hl,Address2_19
+  ld      de,_SCRN0+$100
+  ld      bc,19
+  call    mem_Copy
+  ld      hl,Address3_19
+  ld      de,_SCRN0+$120
+  ld      bc,19
+  call    mem_Copy
+  ld      hl,Phone1_17
+  ld      de,_SCRN0+$160
+  ld      bc,17
+  call    mem_Copy
+  ld      hl,Phone2_17
+  ld      de,_SCRN0+$180
+  ld      bc,17
+  call    mem_Copy
+
+  ; blit happyface
+  ld      de,_SCRN0+$1c9
+  ld      a,2
+  ld      [de],a
+
+  ; blit heart
+  inc     de
+  ld      a,3
+  ld      [de],a
+
+  ; blit heart
+  ld      de,_SCRN0+$1e9
+  ld      [de],a
+
+  ; blit happyface
+  inc     de
+  ld      a,2
+  ld      [de],a
 
 ; Clear OAM
   ld      a,$00
