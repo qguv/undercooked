@@ -12,7 +12,7 @@ includes := $(PYTHON) extras/pokemontools/scan_includes.py
 .SECONDEXPANSION:
 # Suppress annoying intermediate file deletion messages.
 .PRECIOUS: %.2bpp
-.PHONY: all clean compare export
+.PHONY: all clean compare export play
 
 all: main.gb
 
@@ -32,3 +32,11 @@ Makefile: ;
 %.1bpp: %.png  ; @$(1bpp) $<
 %.pic:  %.2bpp ; @$(pic)  $<
 #%.png:  %.2bpp ; @$(png)  $<
+
+play: main.gb
+	bgb main.gb
+
+clean:
+	rm -f main.sym
+	rm -f main.o
+	rm -f main.gb
