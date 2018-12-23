@@ -4,59 +4,59 @@
   INCLUDE "macros.inc"
 
   
-	SECTION	"Org $00",HOME[$00]
+	SECTION	"Org $00",ROM0[$00]
 RST_00:	
 	jp	$100
 
-	SECTION	"Org $08",HOME[$08]
+	SECTION	"Org $08",ROM0[$08]
 RST_08:	
 	jp	$100
 
-	SECTION	"Org $10",HOME[$10]
+	SECTION	"Org $10",ROM0[$10]
 RST_10:
 	jp	$100
 
-	SECTION	"Org $18",HOME[$18]
+	SECTION	"Org $18",ROM0[$18]
 RST_18:
 	jp	$100
 
-	SECTION	"Org $20",HOME[$20]
+	SECTION	"Org $20",ROM0[$20]
 RST_20:
 	jp	$100
 
-	SECTION	"Org $28",HOME[$28]
+	SECTION	"Org $28",ROM0[$28]
 RST_28:
 	jp	$100
 
-	SECTION	"Org $30",HOME[$30]
+	SECTION	"Org $30",ROM0[$30]
 RST_30:
 	jp	$100
 
-	SECTION	"Org $38",HOME[$38]
+	SECTION	"Org $38",ROM0[$38]
 RST_38:
 	jp	$100
 
-	SECTION	"V-Blank IRQ Vector",HOME[$40]
+	SECTION	"V-Blank IRQ Vector",ROM0[$40]
 VBL_VECT:
 	jp VBlank
 	
-	SECTION	"LCD IRQ Vector",HOME[$48]
+	SECTION	"LCD IRQ Vector",ROM0[$48]
 LCD_VECT:
 	reti
 
-	SECTION	"Timer IRQ Vector",HOME[$50]
+	SECTION	"Timer IRQ Vector",ROM0[$50]
 TIMER_VECT:
 	reti
 
-	SECTION	"Serial IRQ Vector",HOME[$58]
+	SECTION	"Serial IRQ Vector",ROM0[$58]
 SERIAL_VECT:
 	reti
 
-	SECTION	"Joypad IRQ Vector",HOME[$60]
+	SECTION	"Joypad IRQ Vector",ROM0[$60]
 JOYPAD_VECT:
 	reti
 
-  SECTION "Org $100",HOME[$100]
+  SECTION "Org $100",ROM0[$100]
   nop
   jp      begin
 
