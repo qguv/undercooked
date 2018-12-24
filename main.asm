@@ -67,40 +67,48 @@ JOYPAD_VECT:
 TileData:
   chr_IBMPC1      1,8
 
-Found1_16:
-  db      "    You found my"
+Found1_len equ 12
+Found1:
+  db      "You found my"
 
-Found2_14:
-  db      "     Game Boy!"
+Found2_len equ 9
+Found2:
+  db      "Game Boy!"
 
-Found3_19:
-  db      "  Please return to:"
+Found3_len equ 17
+Found3:
+  db      "Please return to:"
 
-Address1_18:
-  db      "  Quint Guvernator"
+Address1_len equ 16
+Address1:
+  db      "Quint Guvernator"
 
-Address2_19:
+Address2_len equ 19
+Address2:
   db      "Gerard Doustraat 16"
 
-Address3_19:
+Address3_len equ 19
+Address3:
   db      "1072CA Amsterdam NL"
 
-Phone1_17:
-  db      "  +1 757 606 0005"
+Phone1_len equ 15
+Phone1:
+  db      "+1 757 606 0005"
 
-Phone2_17:
-  db      "  WhatsApp or SMS"
+Phone2_len equ 15
+Phone2:
+  db      "WhatsApp or SMS"
 
 begin::
   di
   ld      sp,$ffff
   call    StopLCD
 
-  ld	  a, %11100100 	; Window palette colors, from darkest to lightest
+  ld	  a, %00011011    ; Window palette colors, from darkest to lightest
   ld      [rBGP],a        ; Setup the default background palette
-  ldh     [rOBP0],a		; set sprite pallette 0
-  ld	  a, %00011011
-  ldh     [rOBP1],a   ; and 1
+  ldh     [rOBP0],a       ; set sprite pallette 0
+  ld	  a, %11100100
+  ldh     [rOBP1],a       ; and 1
 
 ; printable ascii
   ld      hl,TileData
@@ -114,39 +122,22 @@ begin::
   ld      bc,32*32
   call    mem_Set
 
+WriteCenter: MACRO        ; write a line of text in the center of the screen
+  ld      hl,\1
+  ld      de,_SCRN0 + ($20 * \2) + ((20 - \1_len) / 2)
+  ld      bc,\1_len
+  call    mem_Copy
+          ENDM
+
   ; draw text on screen
-  ld      hl,Found1_16
-  ld      de,_SCRN0+$40
-  ld      bc,16
-  call    mem_Copy
-  ld      hl,Found2_14
-  ld      de,_SCRN0+$60
-  ld      bc,14
-  call    mem_Copy
-  ld      hl,Found3_19
-  ld      de,_SCRN0+$a0
-  ld      bc,19
-  call    mem_Copy
-  ld      hl,Address1_18
-  ld      de,_SCRN0+$e0
-  ld      bc,18
-  call    mem_Copy
-  ld      hl,Address2_19
-  ld      de,_SCRN0+$100
-  ld      bc,19
-  call    mem_Copy
-  ld      hl,Address3_19
-  ld      de,_SCRN0+$120
-  ld      bc,19
-  call    mem_Copy
-  ld      hl,Phone1_17
-  ld      de,_SCRN0+$160
-  ld      bc,17
-  call    mem_Copy
-  ld      hl,Phone2_17
-  ld      de,_SCRN0+$180
-  ld      bc,17
-  call    mem_Copy
+  WriteCenter Found1,$2
+  WriteCenter Found2,$3
+  WriteCenter Found3,$5
+  WriteCenter Address1,$7
+  WriteCenter Address2,$8
+  WriteCenter Address3,$9
+  WriteCenter Phone1,$b
+  WriteCenter Phone2,$c
 
   ; blit happyface
   ld      de,_SCRN0+$1c9
