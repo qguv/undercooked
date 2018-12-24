@@ -1,4 +1,4 @@
-PYTHON := python
+PYTHON := python2
 MD5 := md5sum -c --quiet
 
 png      := $(PYTHON) extras/pokemontools/gfx.py png
@@ -14,7 +14,7 @@ includes := $(PYTHON) extras/pokemontools/scan_includes.py
 .PRECIOUS: %.2bpp
 .PHONY: all clean compare export play
 
-all: main.gb
+all: star.2bpp main.gb
 
 export: main.png
 
@@ -28,8 +28,8 @@ Makefile: ;
 	rgblink -n $*.sym -o $@ $^
 	rgbfix -v -p 0 $@
 
-%.2bpp: %.png  ; @$(2bpp) $<
-%.1bpp: %.png  ; @$(1bpp) $<
+%.2bpp: %.png ; rgbgfx -o $@ $^
+%.1bpp: %.png  ; rgbgfx -o $@ $^
 %.pic:  %.2bpp ; @$(pic)  $<
 #%.png:  %.2bpp ; @$(png)  $<
 
@@ -40,3 +40,4 @@ clean:
 	rm -f main.sym
 	rm -f main.o
 	rm -f main.gb
+	rm -f star.2bpp

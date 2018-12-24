@@ -1,262 +1,290 @@
-  INCLUDE "gbhw.inc"
-  INCLUDE "ibmpc1.inc"
-  INCLUDE "hram.inc"
-  INCLUDE "macros.inc"
+include "gbhw.inc"
+include "ibmpc1.inc"
+include "hram.inc"
+include "macros.inc"
 
+include "interrupts.asm"
 
-	SECTION	"Org $00",ROM0[$00]
-RST_00:
-	jp	$100
+section "Org $100",ROM0[$100]
+	nop
+	jp	begin
 
-	SECTION	"Org $08",ROM0[$08]
-RST_08:
-	jp	$100
+	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-	SECTION	"Org $10",ROM0[$10]
-RST_10:
-	jp	$100
-
-	SECTION	"Org $18",ROM0[$18]
-RST_18:
-	jp	$100
-
-	SECTION	"Org $20",ROM0[$20]
-RST_20:
-	jp	$100
-
-	SECTION	"Org $28",ROM0[$28]
-RST_28:
-	jp	$100
-
-	SECTION	"Org $30",ROM0[$30]
-RST_30:
-	jp	$100
-
-	SECTION	"Org $38",ROM0[$38]
-RST_38:
-	jp	$100
-
-	SECTION	"V-Blank IRQ Vector",ROM0[$40]
-VBL_VECT:
-	jp VBlank
-
-	SECTION	"LCD IRQ Vector",ROM0[$48]
-LCD_VECT:
-	reti
-
-	SECTION	"Timer IRQ Vector",ROM0[$50]
-TIMER_VECT:
-	reti
-
-	SECTION	"Serial IRQ Vector",ROM0[$58]
-SERIAL_VECT:
-	reti
-
-	SECTION	"Joypad IRQ Vector",ROM0[$60]
-JOYPAD_VECT:
-	reti
-
-  SECTION "Org $100",ROM0[$100]
-  nop
-  jp      begin
-
-  ROM_HEADER      ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
-
-  INCLUDE "memory.asm"
+include "memory.asm"
 
 TileData:
-  chr_IBMPC1      1,8
+	chr_IBMPC1	1,8
 
 Found1_len equ 12
 Found1:
-  db      "You found my"
+	db	"You found my"
 
 Found2_len equ 9
 Found2:
-  db      "Game Boy!"
+	db	"Game Boy!"
 
 Found3_len equ 17
 Found3:
-  db      "Please return to:"
+	db	"Please return to:"
 
 Address1_len equ 16
 Address1:
-  db      "Quint Guvernator"
+	db	"Quint Guvernator"
 
 Address2_len equ 19
 Address2:
-  db      "Gerard Doustraat 16"
+	db	"Gerard Doustraat 16"
 
 Address3_len equ 19
 Address3:
-  db      "1072CA Amsterdam NL"
+	db	"1072CA Amsterdam NL"
 
 Phone1_len equ 15
 Phone1:
-  db      "+1 757 606 0005"
+	db	"+1 757 606 0005"
 
 Phone2_len equ 15
 Phone2:
-  db      "WhatsApp or SMS"
+	db	"WhatsApp or SMS"
+
+Star: incbin "star.2bpp"
+StarTile equ $80
 
 begin::
-  di
-  ld      sp,$ffff
-  call    StopLCD
+	di
+	ld	sp,$ffff
+	call	StopLCD
 
-  ld	  a, %00011011    ; Window palette colors, from darkest to lightest
-  ld      [rBGP],a        ; Setup the default background palette
-  ldh     [rOBP0],a       ; set sprite pallette 0
-  ld	  a, %11100100
-  ldh     [rOBP1],a       ; and 1
+	ld	a,%00011011	; Window palette colors, from darkest to lightest
+	ld	[rBGP],a	; Setup the default background palette
+	ldh	[rOBP0],a	; set sprite pallette 0
+	ld	a,%11100100
+	ldh	[rOBP1],a	; and 1
 
 ; printable ascii
-  ld      hl,TileData
-  ld      de,_TILE0
-  ld      bc,8*256        ; length (8 bytes per tile) x (256 tiles)
-  call    mem_CopyMono    ; Copy tile data to memory
+	ld	hl,TileData
+	ld	de,_TILE0
+	ld	bc,8*128	; length (8 bytes per tile) x (256 tiles)
+	call	mem_CopyMono	; Copy tile data to memory
+
+	ld	hl,Star
+	ld	de,_TILE0 + ($10 * StarTile)
+	ld	bc,16*8		; size of all eight star sprites
+	call	mem_Copy
 
 ; Clear screen
-  ld      a,$20
-  ld      hl,_SCRN0
-  ld      bc,32*32
-  call    mem_Set
+	ld	a,$20
+	ld	hl,_SCRN0
+	ld	bc,32*32
+	call	mem_Set
 
-WriteCenter: MACRO        ; write a line of text in the center of the screen
-  ld      hl,\1
-  ld      de,_SCRN0 + ($20 * \2) + ((20 - \1_len) / 2)
-  ld      bc,\1_len
-  call    mem_Copy
-          ENDM
+WriteCenter: macro		; write a line of text in the center of the screen
+	ld	hl,\1
+	ld	de,_SCRN0 + ($20 * \2) + ((20 - \1_len) / 2)
+	ld	bc,\1_len
+	call	mem_Copy
+	endm
 
-  ; draw text on screen
-  WriteCenter Found1,$2
-  WriteCenter Found2,$3
-  WriteCenter Found3,$5
-  WriteCenter Address1,$7
-  WriteCenter Address2,$8
-  WriteCenter Address3,$9
-  WriteCenter Phone1,$b
-  WriteCenter Phone2,$c
+	; draw text on screen
+	WriteCenter	Found1,$8
+	WriteCenter	Found2,$9
+	WriteCenter	Found3,$12
+	WriteCenter	Address1,$14
+	WriteCenter	Address2,$15
+	WriteCenter	Address3,$16
+	WriteCenter	Phone1,$18
+	WriteCenter	Phone2,$19
 
-  ; blit happyface
-  ld      de,_SCRN0+$1c9
-  ld      a,2
-  ld      [de],a
+	; blit happyface
+	ld	de,_SCRN0+$389
+	ld	a,1
+	ld	[de],a
 
-  ; blit heart
-  inc     de
-  ld      a,3
-  ld      [de],a
+	; blit heart
+	inc	de
+	ld	a,3
+	ld	[de],a
 
-  ; blit heart
-  ld      de,_SCRN0+$1e9
-  ld      [de],a
+	; blit heart
+	ld	de,_SCRN0+$3a9
+	ld	[de],a
 
-  ; blit happyface
-  inc     de
-  ld      a,2
-  ld      [de],a
+	; blit happyface
+	inc	de
+	ld	a,1
+	ld	[de],a
 
-; Clear OAM
-  ld      a,$00
-  ld      hl,_OAMRAM
-  ld      bc,40*4
-  call    mem_Set
+	; clear oam
+	ld	a,0
+	ld	hl,_OAMRAM
+	ld	bc,160
+	call	mem_Set
 
-  ld      a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON
-  ld      [rLCDC],a       ; Turn screen on
+LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
+	ld	a,16+(8*(\4))		; y, first sprite top-offset by 16
+	ld	[_OAMRAM+((\1)*4)],a
+	ld	a,8+(8*(\3))		; x, first sprite left-offset by 8
+	ld	[_OAMRAM+((\1)*4)+1],a
+	ld	a,\2
+	ld	[_OAMRAM+((\1)*4)+2],a	; tile
+	ld	a,\5
+	ld	[_OAMRAM+((\1)*4)+3],a	; flags
+	endm
 
-; set up interrupt
-  ld a, IEF_VBLANK
-  ld [rIE], a
-  ei
+	LoadSprite	0,StarTile+$0,$01,$6,0
+	LoadSprite	1,StarTile+$2,$12,$6,OAMF_XFLIP
+	LoadSprite	2,StarTile+$4,$01,$b,0
+	LoadSprite	3,StarTile+$6,$12,$b,OAMF_XFLIP
+
+	; turn screen on
+	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON;
+	ld	[rLCDC],a
+
+	ld	a,0
+	ld	[hAnimStall],a		; count frames to skip to slow down animations
+	ld	[hPageDelay],a		; count frames to wait before scrolling to reveal second screen of text
+	ld	[hSpritesDisabled],a	; eventually will need to disable sprites
+
+	; set up interrupt
+	ld	a,IEF_VBLANK
+	ld	[rIE],a
+	ei
 
 .wait:
-  halt
-  nop
-  jr .wait
-
-; *** Turn off the LCD display ***
+	halt
+	nop
+	jr	.wait
 
 StopLCD:
-  ld      a,[rLCDC]
-  rlca                    ; Put the high bit of LCDC into the Carry flag
-  ret     nc              ; Screen is off already. Exit.
+	ld	a,[rLCDC]
+	rlca			; Put the high bit of LCDC into the Carry flag
+	ret	nc		; Screen is off already. Exit.
 
-; Loop until we are in VBlank
-.wait:
-  ld      a,[rLY]
-  cp      145             ; Is display on scan line 145 yet?
-  jr      nz,.wait        ; no, keep waiting
+.wait:				; loop until we are in VBlank
+	ld	a,[rLY]
+	cp	145		; Is display on scan line 145 yet?
+	jr	nz,.wait	; no, keep waiting
 
 ; Turn off the LCD
-  ld      a,[rLCDC]
-  res     7,a             ; Reset bit 7 of LCDC
-  ld      [rLCDC],a
+	ld	a,[rLCDC]
+	res	7,a		; Reset bit 7 of LCDC
+	ld	[rLCDC],a
 
-  ret
+	ret
 
 ; c - byte
 ; hl - address
 DrawHexByte:
-  ld d, 1
-  ld a, c
-  swap a
+	ld	d,1
+	ld	a,c
+	swap	a
 .CharLoop
-  and $0f
-  cp 10
-  jr nc, .Alpha
-  add "0"
-  jr .Write
+	and	$0f
+	cp	10
+	jr	nc,.Alpha
+	add	"0"
+	jr	.Write
 .Alpha
-  add "A"-10
+	add	"A" - 10
 .Write
-  ld [hli], a
-  ld a, d
-  cp 0
-  ld a, c
-  ld d, 0
-  jr nz, .CharLoop
-  ret
+	ld	[hli],a
+	ld	a,d
+	cp	0
+	ld	a,c
+	ld	d,0
+	jr	nz,.CharLoop
+	ret
 
-; Copied from CPU manual
+; directly from GB CPU manual
 ReadJoypad:
-  LD A,P1F_5   ; <- bit 5 = $20
-  LD [rP1],A   ; <- select P14 by setting it low
-  LD A,[rP1]
-  LD A,[rP1]    ; <- wait a few cycles
-  CPL           ; <- complement A
-  AND $0F       ; <- get only first 4 bits
-  SWAP A        ; <- swap it
-  LD B,A        ; <- store A in B
-  LD A,P1F_4
-  LD [rP1],A    ; <- select P15 by setting it low
-  LD A,[rP1]
-  LD A,[rP1]
-  LD A,[rP1]
-  LD A,[rP1]
-  LD A,[rP1]
-  LD A,[rP1]    ; <- Wait a few MORE cycles
-  CPL           ; <- complement (invert)
-  AND $0F       ; <- get first 4 bits
-  OR B          ; <- put A and B together
+	ld	a,P1F_5		; bit 5 = $20
+	ld	[rP1],A		; select P14 by setting it low
+	ld	A,[rP1]
+	ld	A,[rP1]		; wait a few cycles
+	cpl			; complement A
+	and	$0F		; get only first 4 bits
+	swap	A		; swap it
+	ld	B,A		; store A in B
+	ld	A,P1F_4
+	ld	[rP1],A		; select P15 by setting it low
+	ld	A,[rP1]
+	ld	A,[rP1]
+	ld	A,[rP1]
+	ld	A,[rP1]
+	ld	A,[rP1]
+	ld	A,[rP1]		; Wait a few MORE cycles
+	cpl			; complement (invert)
+	and	$0F		; get first 4 bits
+	or	B		; put A and B together
 
-  ;LD B,A        ; <- store A in D
-  ;LD A,[hButtonsOld]  ; <- read old joy data from ram
-  ;XOR B         ; <- toggle w/current button bit
-  ;AND B         ; <- get current button bit back
-  LD [hButtons],A  ; <- save in new Joydata storage
-  ;LD A,B        ; <- put original value in A
-  ;LD [hButtonsOld],A  ; <- store it as old joy data
-  LD A,P1F_5|P1F_4    ; <- deselect P14 and P15
-  LD [rP1],A    ; <- RESET Joypad
-  RET           ; <- Return from Subroutine
+	;ld	B,A		; store A in D
+	;ld	A,[hButtonsOld]	; read old joy data from ram
+	;xor	B		; toggle w/current button bit
+	;and	B		; get current button bit back
+	ld	[hButtons],A	; save in new Joydata storage
+	;ld	A,B		; put original value in A
+	;ld	[hButtonsOld],A	; store it as old joy data
+	ld	A,P1F_5|P1F_4	; deselect P14 and P15
+	ld	[rP1],A		; RESET Joypad
+	ret			; Return from Subroutine
 
-
-
+; each frame, advance all sprites to their next tile
 VBlank::
-  reti
+	ld	a,[hAnimStall]	; if it's time for another animation frame...
+	cp	3
+	jr	z,.animate	; ...animate...
+	inc	a		; ...otherwise increment and bail
+	ld	[hAnimStall],a
+	reti
+.animate:
+	ld	a,0		; reset animation frame wait counter
+	ld	[hAnimStall],a
 
-;* End of File *
+	ld	a,[hPageDelay]	; if it's NOT time to start paging down...
+	cp	32
+	jr	nz,.sprcycle	; ...jump away and increment
 
+	ld	a,[rSCY]	; check the Y scroll
+	cp	$74		; return early if we're at the bottom...
+	jr	z,.ret
+	inc	a		; ...otherwise, scroll Y down
+	ld	[rSCY],a
+
+	; disable sprites
+	ld	a,[hSpritesDisabled]
+	cp	0
+	jr	nz,.ret
+
+	inc	a
+	ld	[hSpritesDisabled],a
+	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
+	ld	[rLCDC],a
+
+.ret
+	reti
+
+.sprcycle
+	inc	a
+	ld	[hPageDelay],a
+
+	ld	b,0		; sprite counter
+	ld	hl,_OAMRAM	; get the first sprite's tile
+	ld	l,2
+
+	ld	de,4
+
+.loop:
+	ld	a,[hl]		; get some sprite's tile
+	inc	a		; advance to the next tile...
+	and	a,$7
+	add	a,StarTile	; ...truncating to stay within the 8 star frames
+	ld	[hl],a		; advance sprite to its next tile
+	inc	b		; select the next sprite in OAMRAM by number...
+	add	hl,de		; ...and by address
+	ld	a,b		; do this for each of the four sprites on the screen
+	cp	4
+	jr	nz,.loop
+	reti
+
+; vim: se ft=rgbds:

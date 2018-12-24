@@ -1,1 +1,4 @@
-hButtons EQU _HIRAM
+hButtons equ _HIRAM
+hAnimStall equ _HIRAM+1
+hPageDelay equ _HIRAM+2
+hSpritesDisabled equ _HIRAM+3
