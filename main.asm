@@ -286,14 +286,13 @@ VBlank::
 	ld	[rSCY],a
 
 	; disable sprites
-	ld	a,[hSpritesDisabled]
-	cp	0
-	jr	nz,.ret
-
-	inc	a
-	ld	[hSpritesDisabled],a
-	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
-	ld	[rLCDC],a
+	;ld	a,[hSpritesDisabled]
+	;cp	0
+	;jr	nz,.ret
+	;inc	a
+	;ld	[hSpritesDisabled],a
+	;ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
+	;ld	[rLCDC],a
 
 .ret
 	reti
@@ -304,18 +303,23 @@ VBlank::
 
 	ld	b,0		; sprite counter
 	ld	hl,_OAMRAM	; get the first sprite's tile
-	ld	l,2
-
-	ld	de,4
-
 .loop:
+	ld	a,[hPageDelay]	; if it's NOT time to start paging down...
+	cp	32
+	jr	nz,.noscroll	; ...jump away and increment
+	inc	[hl]
+
+.noscroll:
+	inc	hl		; go to the tile selection byte of the sprite
+	inc	hl
 	ld	a,[hl]		; get some sprite's tile
 	inc	a		; advance to the next tile...
 	and	a,$7
 	add	a,StarTile	; ...truncating to stay within the 8 star frames
 	ld	[hl],a		; advance sprite to its next tile
 	inc	b		; select the next sprite in OAMRAM by number...
-	add	hl,de		; ...and by address
+	inc	hl		; ...and by address
+	inc	hl
 	ld	a,b		; do this for each of the four sprites on the screen
 	cp	4
 	jr	nz,.loop
