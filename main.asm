@@ -51,6 +51,21 @@ Phone2:
 Star: incbin "star.2bpp"
 StarTile equ $80
 
+PU1Note::
+	ld	a,0			; no sweep
+	ld	[rNR10],a
+	ld	a,%01111111		; duty cycle (top two) and length (the rest)
+	ld	[rNR11],a
+	ld	a,%11110111		; envelope, precisely like LSDj
+	ld	[rNR12],a
+	ld	a,[hPU1Freq]
+	ld	[rNR13],a
+	ld	a,[hPU1Freq+1]
+	add	%00000111		; truncate to MSB that's actually used
+	or	%10000000		; initialize the registers
+	ld	[rNR14],a
+	ret
+
 begin::
 	di
 	ld	sp,$ffff
@@ -136,6 +151,25 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	LoadSprite	1,StarTile+$2,$12,$6,OAMF_XFLIP
 	LoadSprite	2,StarTile+$4,$01,$b,0
 	LoadSprite	3,StarTile+$6,$12,$b,OAMF_XFLIP
+
+	; enable sound registers
+	ld	a,%10000000		; enable sound (keep pu1 off for now)
+	ld	[rNR52],a
+	ld	a,%01110111		; left and right channel volume
+	ld	[rNR50],a
+	ld	a,%00010001		; enable left and right PU1 output only
+	ld	[rNR51],a
+
+	; enable pu1
+	ld	a,%10000001
+	ld	[rNR52],a
+
+	ld	hl,1750
+	ld	a,l
+	ld	[hPU1Freq],a
+	ld	a,h
+	ld	[hPU1Freq+1],a
+	call	PU1Note
 
 	; turn screen on
 	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON;
