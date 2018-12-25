@@ -51,7 +51,7 @@ Phone2:
 Star: incbin "star.2bpp"
 StarTile equ $80
 
-PU1Note::
+PU1Note:
 	ld	a,0			; no sweep
 	ld	[rNR10],a
 	ld	a,%01111111		; duty cycle (top two) and length (the rest)
@@ -176,16 +176,18 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	[rLCDC],a
 
 	ld	a,0
-	ld	[hAnimStall],a		; count frames to skip to slow down animations
 	ld	[hPageDelay],a		; count frames to wait before scrolling to reveal second screen of text
 	ld	[hSpritesDisabled],a	; eventually will need to disable sprites
+
+	ld	b,0			; slow down animations by skipping every b'th frame
 
 	; set up interrupt
 	ld	a,IEF_VBLANK
 	ld	[rIE],a
 	ei
 
-.wait:
+.wait
+	; wait for vblank
 	halt
 	nop
 	jr	.wait
@@ -195,14 +197,15 @@ StopLCD:
 	rlca			; Put the high bit of LCDC into the Carry flag
 	ret	nc		; Screen is off already. Exit.
 
-.wait:				; loop until we are in VBlank
+.wait
+	; wait for vblank scan line 145
 	ld	a,[rLY]
-	cp	145		; Is display on scan line 145 yet?
-	jr	nz,.wait	; no, keep waiting
+	cp	145
+	jr	nz,.wait
 
-; Turn off the LCD
+	; turn off the LCD
 	ld	a,[rLCDC]
-	res	7,a		; Reset bit 7 of LCDC
+	res	7,a
 	ld	[rLCDC],a
 
 	ret
@@ -263,53 +266,59 @@ ReadJoypad:
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
-; each frame, advance all sprites to their next tile
+; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	ld	a,[hAnimStall]	; if it's time for another animation frame...
+	ld	a,b
 	cp	3
 	jr	z,.animate	; ...animate...
-	inc	a		; ...otherwise increment and bail
-	ld	[hAnimStall],a
+	inc	b		; ...otherwise increment and bail
 	reti
-.animate:
-	ld	a,0		; reset animation frame wait counter
-	ld	[hAnimStall],a
 
-	ld	a,[hPageDelay]	; if it's NOT time to start paging down...
+.animate
+	; if the initial delay to start page down animation has expired, begin scrolling
+	ld	a,[hPageDelay]
 	cp	32
-	jr	nz,.sprcycle	; ...jump away and increment
+	jr	z,.scrollscreen	; ...if so, start scrolling...
 
-	ld	a,[rSCY]	; check the Y scroll
-	cp	$74		; return early if we're at the bottom...
-	jr	z,.ret
-	inc	a		; ...otherwise, scroll Y down
-	ld	[rSCY],a
-
-	; disable sprites
-	;ld	a,[hSpritesDisabled]
-	;cp	0
-	;jr	nz,.ret
-	;inc	a
-	;ld	[hSpritesDisabled],a
-	;ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
-	;ld	[rLCDC],a
-
-.ret
-	reti
-
-.sprcycle
+	; otherwise, increment delay counter and skip scrolling
 	inc	a
 	ld	[hPageDelay],a
+	jr	.cyclesprites
 
+.scrollscreen
+	; don't scroll if we're already at the bottom
+	ld	a,[rSCY]
+	cp	$74
+	jr	z,.disablesprites
+
+	; otherwise, scroll screen down
+	inc	a
+	ld	[rSCY],a
+	jr	.cyclesprites
+
+.disablesprites
+	; if sprites are already disabled, we're done
+	ld	a,[hSpritesDisabled]
+	cp	0
+	jr	nz,.end
+
+	; otherwise, disable sprites and THEN we're done
+	inc	a
+	ld	[hSpritesDisabled],a
+	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
+	ld	[rLCDC],a
+	jr	nz,.end
+
+.cyclesprites
 	ld	b,0		; sprite counter
 	ld	hl,_OAMRAM	; get the first sprite's tile
-.loop:
+.loop
 	ld	a,[hPageDelay]	; if it's NOT time to start paging down...
 	cp	32
 	jr	nz,.noscroll	; ...jump away and increment
-	inc	[hl]
+	dec	[hl]
 
-.noscroll:
+.noscroll
 	inc	hl		; go to the tile selection byte of the sprite
 	inc	hl
 	ld	a,[hl]		; get some sprite's tile
@@ -323,6 +332,9 @@ VBlank::
 	ld	a,b		; do this for each of the four sprites on the screen
 	cp	4
 	jr	nz,.loop
+
+.end
+	ld	b,0		; reset animation frame wait counter
 	reti
 
 ; vim: se ft=rgbds:
