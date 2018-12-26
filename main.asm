@@ -90,10 +90,21 @@ PU1Note: ; clobbers registers a, h, l
 	ld	a,l			; truncate LSB to maximum note array byte index
 	and	(Notes_len << 1) - 1
 	ld	[hPU1NextNoteByteIndex],a
+	ld	l,a
 	ld	a,h			; truncate MSB to maximum note array byte index
-	and	(Notes_len >> 7) - 1
+	and	(Notes_len >> 7) - 1	; TODO not convinced this works, looks like ISA disasm gives $ff for the const here
 	ld	[hPU1NextNoteByteIndex+1],a
 
+	; if hPUNextNoteByteIndex is now zero, the song has repeated
+	cp	0
+	jr	nz,.set_frequency
+	ld	a,l
+	cp	0
+	jr	nz,.set_frequency
+	ld	a,1
+	ld	[hSongHasRepeated],a
+
+.set_frequency
 	; okay now actually index the notes table with it and set frequency
 	ld	hl,Notes
 	add	hl,bc
@@ -209,7 +220,7 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	[rLCDC],a
 
 	ld	a,0
-	ld	[hPageDelay],a		; count frames to wait before scrolling to reveal second screen of text
+	ld	[hSongHasRepeated],a	; whether the song has repeated yet
 	ld	[hSpriteAnimDelay],a	; slow down animations by skipping some frames
 	ld	[hPU1Dur],a		; initial note duration
 	ld	[hPU1NextNoteByteIndex],a	; index of current note in the note table (LSB)
@@ -302,17 +313,10 @@ ReadJoypad:
 
 ; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	; if the initial delay to start page down animation has expired, begin scrolling
-	ld	a,[hPageDelay]
-	cp	pScrollDownDelay
-	jr	z,.scroll_screen
+	ld	a,[hSongHasRepeated]		; if the music hasn't repeated yet, don't scroll, skip directly to sprites
+	cp	0
+	jr	z,.animate_sprites
 
-	; otherwise, increment delay counter and jump to sprite manipulation
-	inc	a
-	ld	[hPageDelay],a
-	jr	.animate_sprites
-
-.scroll_screen
 	; don't scroll if we're already at the bottom
 	ld	a,[rSCY]
 	cp	$74
@@ -331,15 +335,15 @@ VBlank::
 	ld	[hSpriteAnimDelay],a
 
 	ld	c,a		; memoize animation delay to 'c'
-	ld	a,[hPageDelay]	; memoize page delay to 'd'
+	ld	a,[hSongHasRepeated]	; memoize song repetition to 'd'
 	ld	d,a
 
 	ld	hl,_OAMRAM	; get the first sprite
 	ld	b,0		; and its index
 .loop
 	ld	a,d		; if we're not scrolling yet, jump to sprite cycling
-	cp	pScrollDownDelay
-	jr	nz,.cycle_sprite
+	cp	0
+	jr	z,.cycle_sprite
 
 	; deal with going off the screen
 	ld	a,[hl]
