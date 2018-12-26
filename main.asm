@@ -122,10 +122,10 @@ begin::
 	ld	sp,$ffff
 	call	StopLCD
 
-	ld	a,%00011011	; Window palette colors, from darkest to lightest
+	ld	a,%11100100	; Window palette colors, from darkest to lightest
 	ld	[rBGP],a	; Setup the default background palette
 	ldh	[rOBP0],a	; set sprite pallette 0
-	ld	a,%11100100
+	ld	a,%00011011
 	ldh	[rOBP1],a	; and 1
 
 ; printable ascii
