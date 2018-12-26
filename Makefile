@@ -33,7 +33,7 @@ Makefile: ;
 %.pic:  %.2bpp ; @$(pic)  $<
 #%.png:  %.2bpp ; @$(png)  $<
 
-play: main.gb
+play: all
 	bgb main.gb
 
 clean:

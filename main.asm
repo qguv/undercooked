@@ -3,6 +3,7 @@ include "ibmpc1.inc"
 include "hram.inc"
 include "macros.inc"
 include "params.inc"		; tweakable constant parameters
+include "notes.inc"
 
 include "interrupts.asm"
 
@@ -49,22 +50,60 @@ Phone2_len equ 15
 Phone2:
 	db	"WhatsApp or SMS"
 
+Notes_len equ 32	; number of 2-byte notes, not number of bytes!
+Notes:
+	dw	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
+		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
+		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
+		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
+
 Star: incbin "star.2bpp"
 StarTile equ $80
 
-PU1Note:
+PU1Note: ; clobbers registers a, h, l
+	ld	a,[hPU1Dur]		; if duration of previous note is expired, continue
+	cp	0
+	jr	z,.next_note
+	dec	a			; otherwise decrement and return
+	ld	[hPU1Dur],a
+	ret
+
+.next_note
+	ld	a,pNoteDuration		; set next note duration
+	ld	[hPU1Dur],a
+
 	ld	a,0			; no sweep
 	ld	[rNR10],a
 	ld	a,%01111111		; duty cycle (top two) and length (the rest)
 	ld	[rNR11],a
-	ld	a,%11110111		; envelope, precisely like LSDj
+	ld	a,pNoteEnvelope		; envelope, precisely like LSDj
 	ld	[rNR12],a
-	ld	a,[hPU1Freq]
-	ld	[rNR13],a
-	ld	a,[hPU1Freq+1]
-	add	%00000111		; truncate to MSB that's actually used
-	or	%10000000		; initialize the registers
-	ld	[rNR14],a
+
+	ld	a,[hPU1NextNoteByteIndex]	; get next note index
+	ld	l,a
+	ld	c,a			; memoizing for later
+	ld	a,[hPU1NextNoteByteIndex+1]
+	ld	h,a
+	ld	b,a			; memoizing for later
+	inc	hl			; increment by two bytes, the length of one note frequency
+	inc	hl
+	ld	a,l			; truncate LSB to maximum note array byte index
+	and	(Notes_len << 1) - 1
+	ld	[hPU1NextNoteByteIndex],a
+	ld	a,h			; truncate MSB to maximum note array byte index
+	and	(Notes_len >> 7) - 1
+	ld	[hPU1NextNoteByteIndex+1],a
+
+	; okay now actually index the notes table with it and set frequency
+	ld	hl,Notes
+	add	hl,bc
+	ld	a,[hl+]			; get frequency LSB
+	ld	[rNR13],a		; set frequency LSB
+	ld	a,[hl]			; get frequency MSB
+	and	%00000111		; truncate to bits of MSB that are actually used
+	or	%10000000		; reset envelope (not legato)
+	ld	[rNR14],a		; set frequency MSB and flags
+.end
 	ret
 
 begin::
@@ -165,13 +204,6 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,%10000001
 	ld	[rNR52],a
 
-	ld	hl,1750
-	ld	a,l
-	ld	[hPU1Freq],a
-	ld	a,h
-	ld	[hPU1Freq+1],a
-	call	PU1Note
-
 	; turn screen on
 	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON;
 	ld	[rLCDC],a
@@ -179,6 +211,9 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,0
 	ld	[hPageDelay],a		; count frames to wait before scrolling to reveal second screen of text
 	ld	[hSpriteAnimDelay],a	; slow down animations by skipping some frames
+	ld	[hPU1Dur],a		; initial note duration
+	ld	[hPU1NextNoteByteIndex],a	; index of current note in the note table (LSB)
+	ld	[hPU1NextNoteByteIndex+1],a	; index of current note in the note table (MSB)
 
 	; set up interrupt
 	ld	a,IEF_VBLANK
@@ -349,6 +384,7 @@ endr
 	jr	nz,.loop
 
 .end
+	call PU1Note
 	reti
 
 ; vim: se ft=rgbds:
