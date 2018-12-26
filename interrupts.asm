@@ -49,4 +49,3 @@ SERIAL_VECT:
 section "Joypad IRQ Vector",ROM0[$60]
 JOYPAD_VECT:
 	reti
-

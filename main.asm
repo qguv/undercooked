@@ -2,6 +2,7 @@ include "gbhw.inc"
 include "ibmpc1.inc"
 include "hram.inc"
 include "macros.inc"
+include "params.inc"		; tweakable constant parameters
 
 include "interrupts.asm"
 
@@ -177,9 +178,7 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 
 	ld	a,0
 	ld	[hPageDelay],a		; count frames to wait before scrolling to reveal second screen of text
-	ld	[hSpritesDisabled],a	; eventually will need to disable sprites
-
-	ld	b,0			; slow down animations by skipping every b'th frame
+	ld	[hSpriteAnimDelay],a	; slow down animations by skipping some frames
 
 	; set up interrupt
 	ld	a,IEF_VBLANK
@@ -268,73 +267,88 @@ ReadJoypad:
 
 ; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	ld	a,b
-	cp	3
-	jr	z,.animate	; ...animate...
-	inc	b		; ...otherwise increment and bail
-	reti
-
-.animate
 	; if the initial delay to start page down animation has expired, begin scrolling
 	ld	a,[hPageDelay]
-	cp	32
-	jr	z,.scrollscreen	; ...if so, start scrolling...
+	cp	pScrollDownDelay
+	jr	z,.scroll_screen
 
-	; otherwise, increment delay counter and skip scrolling
+	; otherwise, increment delay counter and jump to sprite manipulation
 	inc	a
 	ld	[hPageDelay],a
-	jr	.cyclesprites
+	jr	.animate_sprites
 
-.scrollscreen
+.scroll_screen
 	; don't scroll if we're already at the bottom
 	ld	a,[rSCY]
 	cp	$74
-	jr	z,.disablesprites
+	jr	z,.end
 
 	; otherwise, scroll screen down
 	inc	a
 	ld	[rSCY],a
-	jr	.cyclesprites
+	jr	.animate_sprites
 
-.disablesprites
-	; if sprites are already disabled, we're done
-	ld	a,[hSpritesDisabled]
-	cp	0
-	jr	nz,.end
-
-	; otherwise, disable sprites and THEN we're done
+.animate_sprites
+	; advance animation delay
+	ld	a,[hSpriteAnimDelay]
 	inc	a
-	ld	[hSpritesDisabled],a
-	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJOFF;
-	ld	[rLCDC],a
-	jr	nz,.end
+	and	(1<<pSpriteCycleSpeed)-1	; truncate to just a couple LSBs
+	ld	[hSpriteAnimDelay],a
 
-.cyclesprites
-	ld	b,0		; sprite counter
-	ld	hl,_OAMRAM	; get the first sprite's tile
+	ld	c,a		; memoize animation delay to 'c'
+	ld	a,[hPageDelay]	; memoize page delay to 'd'
+	ld	d,a
+
+	ld	hl,_OAMRAM	; get the first sprite
+	ld	b,0		; and its index
 .loop
-	ld	a,[hPageDelay]	; if it's NOT time to start paging down...
-	cp	32
-	jr	nz,.noscroll	; ...jump away and increment
-	dec	[hl]
+	ld	a,d		; if we're not scrolling yet, jump to sprite cycling
+	cp	pScrollDownDelay
+	jr	nz,.cycle_sprite
 
-.noscroll
+	; deal with going off the screen
+	ld	a,[hl]
+	cp	9
+	jr	z,.zero_sprite	; if it's just about to go off the screen, zero it out
+	jr	c,.skip		; if it's already off the screen, move onto the next one
+	dec	[hl]		; otherwise, scroll it down
+	jr	.cycle_sprite
+
+.zero_sprite
+rept 4
+	ld	[hl],0
+	inc hl
+endr
+	jr	.next_noadvance	; kinda ugly, but I think it's unfortunately optimal
+
+.skip
+rept 4
+	inc	hl		; ugly yes, but we can't use 16-bit registers to do this because we've memoized too much
+endr
+	jr	.next_noadvance
+
+.cycle_sprite
 	inc	hl		; go to the tile selection byte of the sprite
 	inc	hl
+
+	ld	a,c		; check if we're in a frame when we're supposed to cycle
+	cp	0
+	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
 	inc	a		; advance to the next tile...
 	and	a,$7
 	add	a,StarTile	; ...truncating to stay within the 8 star frames
 	ld	[hl],a		; advance sprite to its next tile
-	inc	b		; select the next sprite in OAMRAM by number...
-	inc	hl		; ...and by address
+.next
+	inc	hl		; go to the next sprite in OAMRAM...
 	inc	hl
+.next_noadvance
+	inc	b		; ...and increment the sprite counter
 	ld	a,b		; do this for each of the four sprites on the screen
 	cp	4
 	jr	nz,.loop
 
 .end
-	ld	b,0		; reset animation frame wait counter
 	reti
 
 ; vim: se ft=rgbds:
