@@ -60,7 +60,7 @@ Notes:
 Star: incbin "star.2bpp"
 StarTile equ $80
 
-PU1Note: ; clobbers registers a, h, l
+PU1Note:
 	ld	a,[hPU1Dur]		; if duration of previous note is expired, continue
 	cp	0
 	jr	z,.next_note
@@ -225,6 +225,7 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	[hPU1Dur],a		; initial note duration
 	ld	[hPU1NextNoteByteIndex],a	; index of current note in the note table (LSB)
 	ld	[hPU1NextNoteByteIndex+1],a	; index of current note in the note table (MSB)
+	ld	[hSpriteIndex],a
 
 	; set up interrupt
 	ld	a,IEF_VBLANK
@@ -334,14 +335,11 @@ VBlank::
 	and	(1<<pSpriteCycleSpeed)-1	; truncate to just a couple LSBs
 	ld	[hSpriteAnimDelay],a
 
-	ld	c,a		; memoize animation delay to 'c'
-	ld	a,[hSongHasRepeated]	; memoize song repetition to 'd'
-	ld	d,a
-
 	ld	hl,_OAMRAM	; get the first sprite
-	ld	b,0		; and its index
+	ld	a,0		; reset sprite index
+	ld	[hSpriteIndex],a
 .loop
-	ld	a,d		; if we're not scrolling yet, jump to sprite cycling
+	ld	a,[hSongHasRepeated]	; if we're not scrolling yet, jump to sprite cycling
 	cp	0
 	jr	z,.cycle_sprite
 
@@ -354,23 +352,22 @@ VBlank::
 	jr	.cycle_sprite
 
 .zero_sprite
+	ld	a,0
 rept 4
-	ld	[hl],0
-	inc hl
+	ld	[hl+],a
 endr
 	jr	.next_noadvance	; kinda ugly, but I think it's unfortunately optimal
 
 .skip
-rept 4
-	inc	hl		; ugly yes, but we can't use 16-bit registers to do this because we've memoized too much
-endr
+	ld	bc,4
+	add	hl,bc
 	jr	.next_noadvance
 
 .cycle_sprite
-	inc	hl		; go to the tile selection byte of the sprite
-	inc	hl
+	inc	hl		; go to the tile selection byte of the sprite (2 cycles
+	inc	hl		; (two increments is 4 cycles, vs 16-bit load (3) and add (2) (5 total))
 
-	ld	a,c		; check if we're in a frame when we're supposed to cycle
+	ld	a,[hSpriteAnimDelay]	; check if we're in a frame when we're supposed to cycle
 	cp	0
 	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
@@ -382,9 +379,10 @@ endr
 	inc	hl		; go to the next sprite in OAMRAM...
 	inc	hl
 .next_noadvance
-	inc	b		; ...and increment the sprite counter
-	ld	a,b		; do this for each of the four sprites on the screen
-	cp	4
+	ld	a,[hSpriteIndex]	; increment the sprite counter
+	inc	a
+	ld	[hSpriteIndex],a	; increment the sprite counter
+	cp	pNumSprites		; repeat for each sprite
 	jr	nz,.loop
 
 .end
