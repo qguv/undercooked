@@ -1,7 +1,11 @@
-OBJDIR = ../obj
-OUTDIR = ..
-EXTRASDIR = ../extras
+SRCDIR = src
+OBJDIR = obj
+OUTDIR = .
+SPRITEDIR = sprites
+LIBDIR = lib
+EXTRASDIR = extras
 
+BGB := wine bgb.exe
 PYTHON2 := python2
 MD5 := md5sum -c --quiet
 
@@ -18,13 +22,15 @@ includes := $(PYTHON2) $(EXTRASDIR)/pokemontools/scan_includes.py
 .PRECIOUS: %.2bpp
 .PHONY: all clean compare play
 
+VPATH = $(SRCDIR) $(LIBDIR) $(SPRITEDIR)
+
 all: $(OBJDIR)/star.2bpp $(OUTDIR)/main.gb
 
 %.asm: ;
 
-$(OBJDIR)/%.o: %.asm $(shell $(includes) main.asm)
+$(OBJDIR)/%.o: %.asm $(shell $(includes) src/main.asm)
 	mkdir -p $(OBJDIR)
-	rgbasm -v -h -o $@ $*.asm
+	rgbasm -v -h -o $@ $<
 
 $(OUTDIR)/%.gb: $(OBJDIR)/%.o
 	rgblink -n $(OBJDIR)/$*.sym -o $@ $^
@@ -43,7 +49,7 @@ $(OBJDIR)/%.pic: %.2bpp
 	@$(pic) $<
 
 play: all
-	bgb -nobatt $(OUTDIR)/main.gb
+	$(BGB) -nobatt $(OUTDIR)/main.gb
 
 clean:
 	rm -rf $(OBJDIR)

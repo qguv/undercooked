@@ -1,8 +1,8 @@
-include "gbhw.inc"		; hardware descriptions
-include "ibmpc1.inc"		; font
-include "optim.inc"		; optimized instruction aliases
+include "lib/gbhw.inc"		; hardware descriptions
+include "lib/ibmpc1.inc"	; font
+include "src/optim.inc"		; optimized instruction aliases
 
-include "interrupts.asm"
+include "src/interrupts.asm"
 
 section "Org $100",ROM0[$100]
 	nop
@@ -10,8 +10,8 @@ section "Org $100",ROM0[$100]
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-include "memory.asm"
-include "music.inc"		; music note frequencies
+include "lib/memory.asm"
+include "src/music.inc"		; music note frequencies
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +70,7 @@ Notes:
 		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
 		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
 
-Star: incbin "../obj/star.2bpp"
+Star: incbin "obj/star.2bpp"
 StarTile equ $80
 
 PU1Note:
