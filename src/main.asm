@@ -1,9 +1,6 @@
-include "gbhw.inc"
-include "ibmpc1.inc"
-include "hram.inc"
-include "macros.inc"
-include "params.inc"		; tweakable constant parameters
-include "notes.inc"
+include "gbhw.inc"		; hardware descriptions
+include "ibmpc1.inc"		; font
+include "optim.inc"		; optimized instruction aliases
 
 include "interrupts.asm"
 
@@ -14,6 +11,22 @@ section "Org $100",ROM0[$100]
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
 include "memory.asm"
+include "music.inc"		; music note frequencies
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+pSpriteCycleSpeed equ 2		; speed of star animation, higher is exponentially slower
+pNoteDuration equ 11            ; note length in vblank frames (~160ms)
+pNoteEnvelope equ %11110001     ; envelope, precisely like LSDj
+pNumSprites equ 4               ; number of sprites on the screen
+
+		rsset _HIRAM
+hButtons	rb 1
+hSongRepeated	rb 1
+hSprCycleStall	rb 1
+hPU1Dur		rb 1
+hPU1NoteIndex	rb 1
+hSpriteIndex	rb 1
 
 TileData:
 	chr_IBMPC1	1,8
@@ -52,17 +65,17 @@ Phone2:
 
 Notes_len equ 32	; number of 2-byte notes, not number of bytes!
 Notes:
-	dw	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
+	db	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
 		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
 		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
 		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
 
-Star: incbin "star.2bpp"
+Star: incbin "../obj/star.2bpp"
 StarTile equ $80
 
 PU1Note:
 	ld	a,[hPU1Dur]		; if duration of previous note is expired, continue
-	cp	0
+	cpz
 	jr	z,.next_note
 	dec	a			; otherwise decrement and return
 	ld	[hPU1Dur],a
@@ -72,45 +85,41 @@ PU1Note:
 	ld	a,pNoteDuration		; set next note duration
 	ld	[hPU1Dur],a
 
-	ld	a,0			; no sweep
+	ldz				; disable sweep
 	ld	[rNR10],a
 	ld	a,%01111111		; duty cycle (top two) and length (the rest)
 	ld	[rNR11],a
 	ld	a,pNoteEnvelope		; envelope, precisely like LSDj
 	ld	[rNR12],a
 
-	ld	a,[hPU1NextNoteByteIndex]	; get next note index
-	ld	l,a
-	ld	c,a			; memoizing for later
-	ld	a,[hPU1NextNoteByteIndex+1]
-	ld	h,a
-	ld	b,a			; memoizing for later
-	inc	hl			; increment by two bytes, the length of one note frequency
-	inc	hl
-	ld	a,l			; truncate LSB to maximum note array byte index
-	and	(Notes_len << 1) - 1
-	ld	[hPU1NextNoteByteIndex],a
-	ld	l,a
-	ld	a,h			; truncate MSB to maximum note array byte index
-	and	(Notes_len >> 7) - 1	; TODO not convinced this works, looks like ISA disasm gives $ff for the const here
-	ld	[hPU1NextNoteByteIndex+1],a
+	ld	a,[hPU1NoteIndex]	; get note index
+	ld	c,a			; and save it baybeeeeeeeeeeee
+	inc	a			; so we can increment it for next time
+	and	Notes_len-1		; DRUNK xROGPAAMING LEST"S GOOOOO
+	ld	[hPU1NoteIndex],a	; asmblberr is a great worrrd
 
-	; if hPUNextNoteByteIndex is now zero, the song has repeated
-	cp	0
+	cpz				; if hPU1NoteIndex isn't zero, fine...
 	jr	nz,.set_frequency
-	ld	a,l
-	cp	0
-	jr	nz,.set_frequency
-	ld	a,1
-	ld	[hSongHasRepeated],a
+	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
+	ld	[hSongRepeated],a
 
 .set_frequency
-	; okay now actually index the notes table with it and set frequency
+	; index the notes-in-song table with the note song-index to get the actual note value
 	ld	hl,Notes
+	ld	b,0
 	add	hl,bc
-	ld	a,[hl+]			; get frequency LSB
-	ld	[rNR13],a		; set frequency LSB
-	ld	a,[hl]			; get frequency MSB
+	ld	c,[hl]
+
+	; index the note frequency table with the actual note value to get the note frequency (16-bit)
+	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
+	rl	b
+
+	ld	hl,NoteFreqs		; now index the damn table
+	add	hl,bc
+
+	ld	a,[hl+]			; freq LSB
+	ld	[rNR13],a
+	ld	a,[hl]			; freq MSB
 	and	%00000111		; truncate to bits of MSB that are actually used
 	or	%10000000		; reset envelope (not legato)
 	ld	[rNR14],a		; set frequency MSB and flags
@@ -182,7 +191,7 @@ WriteCenter: macro		; write a line of text in the center of the screen
 	ld	[de],a
 
 	; clear oam
-	ld	a,0
+	ldz
 	ld	hl,_OAMRAM
 	ld	bc,160
 	call	mem_Set
@@ -219,12 +228,11 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON;
 	ld	[rLCDC],a
 
-	ld	a,0
-	ld	[hSongHasRepeated],a	; whether the song has repeated yet
-	ld	[hSpriteAnimDelay],a	; slow down animations by skipping some frames
+	ldz
+	ld	[hSongRepeated],a	; whether the song has repeated yet
+	ld	[hSprCycleStall],a	; slow down animations by skipping some frames
 	ld	[hPU1Dur],a		; initial note duration
-	ld	[hPU1NextNoteByteIndex],a	; index of current note in the note table (LSB)
-	ld	[hPU1NextNoteByteIndex+1],a	; index of current note in the note table (MSB)
+	ld	[hPU1NoteIndex],a	; index of current note in the note table (LSB)
 	ld	[hSpriteIndex],a
 
 	; set up interrupt
@@ -273,7 +281,7 @@ DrawHexByte:
 .Write
 	ld	[hli],a
 	ld	a,d
-	cp	0
+	cpz
 	ld	a,c
 	ld	d,0
 	jr	nz,.CharLoop
@@ -314,8 +322,8 @@ ReadJoypad:
 
 ; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	ld	a,[hSongHasRepeated]		; if the music hasn't repeated yet, don't scroll, skip directly to sprites
-	cp	0
+	ld	a,[hSongRepeated]		; if the music hasn't repeated yet, don't scroll, skip directly to sprites
+	cpz
 	jr	z,.animate_sprites
 
 	; don't scroll if we're already at the bottom
@@ -330,17 +338,17 @@ VBlank::
 
 .animate_sprites
 	; advance animation delay
-	ld	a,[hSpriteAnimDelay]
+	ld	a,[hSprCycleStall]
 	inc	a
 	and	(1<<pSpriteCycleSpeed)-1	; truncate to just a couple LSBs
-	ld	[hSpriteAnimDelay],a
+	ld	[hSprCycleStall],a
 
 	ld	hl,_OAMRAM	; get the first sprite
-	ld	a,0		; reset sprite index
+	ldz		; reset sprite index
 	ld	[hSpriteIndex],a
 .loop
-	ld	a,[hSongHasRepeated]	; if we're not scrolling yet, jump to sprite cycling
-	cp	0
+	ld	a,[hSongRepeated]	; if we're not scrolling yet, jump to sprite cycling
+	cpz
 	jr	z,.cycle_sprite
 
 	; deal with going off the screen
@@ -352,7 +360,7 @@ VBlank::
 	jr	.cycle_sprite
 
 .zero_sprite
-	ld	a,0
+	ldz
 rept 4
 	ld	[hl+],a
 endr
@@ -367,8 +375,8 @@ endr
 	inc	hl		; go to the tile selection byte of the sprite (2 cycles
 	inc	hl		; (two increments is 4 cycles, vs 16-bit load (3) and add (2) (5 total))
 
-	ld	a,[hSpriteAnimDelay]	; check if we're in a frame when we're supposed to cycle
-	cp	0
+	ld	a,[hSprCycleStall]	; check if we're in a frame when we're supposed to cycle
+	cpz
 	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
 	inc	a		; advance to the next tile...
