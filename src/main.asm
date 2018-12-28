@@ -11,22 +11,22 @@ section "Org $100",ROM0[$100]
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
 include "lib/memory.asm"
-include "src/music.inc"		; music note frequencies
+include "src/music.asm"		; music note frequencies
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-pSpriteCycleSpeed equ 2		; speed of star animation, higher is exponentially slower
-pNoteDuration equ 11		; note length in vblank frames (~160ms)
-pNoteEnvelope equ %11110001	; envelope, precisely like LSDj
-pNumSprites equ 4		; number of sprites on the screen
+pSprCycleSpeed	equ 2		; speed of star animation, higher is exponentially slower
+pNoteLength	equ 11		; note length in vblank frames (~160ms)
+pNumSprites	equ 4		; number of sprites on the screen
 
 		rsset _HIRAM
-hButtons	rb 1
-hSongRepeated	rb 1
-hSprCycleStall	rb 1
-hPU1Dur		rb 1
-hPU1NoteIndex	rb 1
-hSpriteIndex	rb 1
+hButtons	rb 1		; bitmask of which buttons are being held
+hSongRepeated	rb 1		; when the song repeats for the first time, start scrolling
+hSprCycleStall	rb 1		; delay counter between sprite tile cycling animation frames
+hSprIndex	rb 1		; used to loop through animating/moving sprites
+hNoteDur	rb 1		; counter for frames within note
+hNoteIndex	rb 1		; index of note in song
+_HIRAM_END	rb 0
 
 Font:
 	chr_IBMPC1	1,8
@@ -63,67 +63,84 @@ Phone2_len equ 15
 Phone2:
 	db	"WhatsApp or SMS"
 
-Notes_len equ 32	; number of 2-byte notes, not number of bytes!
-Notes:
+SongLength equ 32	; number of NOTES not BYTES
+NotesPU1:
 	db	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
 		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
 		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
 		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
+NotesPU2:
+	db	fs3,REST,fs3,REST,e3,REST,REST,REST, \
+		d3,REST,d3,REST,d3,REST,d3,d4, \
+		d3,REST,d3,REST,e3,REST,REST,REST, \
+		fs3,REST,fs3,REST,fs3,REST,e4,fs4
 
 Star: incbin "obj/star.2bpp"
 StarTile equ $80
 
-PU1Note:
-	ld	a,[hPU1Dur]		; if duration of previous note is expired, continue
+HandleNotes:
+	ld	a,[hNoteDur]		; if duration of previous note is expired, continue
 	cpz
 	jr	z,.next_note
 	dec	a			; otherwise decrement and return
-	ld	[hPU1Dur],a
+	ld	[hNoteDur],a
 	ret
 
 .next_note
-	ld	a,pNoteDuration		; set next note duration
-	ld	[hPU1Dur],a
+	ld	a,pNoteLength		; set next note duration
+	ld	[hNoteDur],a
 
-	ldz				; disable sweep
-	ld	[rNR10],a
-	ld	a,%01111111		; duty cycle (top two) and length (the rest)
-	ld	[rNR11],a
-	ld	a,pNoteEnvelope		; envelope, precisely like LSDj
-	ld	[rNR12],a
-
-	ld	a,[hPU1NoteIndex]	; get note index
-	ld	c,a			; and save it baybeeeeeeeeeeee
-	inc	a			; so we can increment it for next time
-	and	Notes_len-1		; DRUNK xROGPAAMING LEST"S GOOOOO
-	ld	[hPU1NoteIndex],a	; asmblberr is a great worrrd
-
+	ld	a,[hNoteIndex]		; get note index
 	cpz				; if hPU1NoteIndex isn't zero, fine...
-	jr	nz,.set_frequency
+	jr	nz,.sound_registers
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
 	ld	[hSongRepeated],a
 
-.set_frequency
+pulsenote: macro
 	; index the notes-in-song table with the note song-index to get the actual note value
-	ld	hl,Notes
 	ld	b,0
+	ld	a,[hNoteIndex]
+	ld	c,a
+	ld	hl,\1
 	add	hl,bc
 	ld	c,[hl]
 
+	ld	a,c			; if it's a rest, don't set any registers for this note
+	cp	REST
+	jr	z,.end\@
+
 	; index the note frequency table with the actual note value to get the note frequency (16-bit)
+	ld	b,0
 	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
 	rl	b
 
 	ld	hl,NoteFreqs		; now index the damn table
 	add	hl,bc
 
+	ldz				; disable sweep
+	ld	[\4],a
+	ld	a,\2			; duty cycle (top two) and length (the rest)
+	ld	[\5],a
+	ld	a,\3			; envelope, precisely like LSDj
+	ld	[\6],a
 	ld	a,[hl+]			; freq LSB
-	ld	[rNR13],a
+	ld	[\7],a
 	ld	a,[hl]			; freq MSB
 	and	%00000111		; truncate to bits of MSB that are actually used
 	or	%10000000		; reset envelope (not legato)
-	ld	[rNR14],a		; set frequency MSB and flags
-.end
+	ld	[\8],a			; set frequency MSB and flags
+.end\@
+	endm
+
+.sound_registers
+	pulsenote	NotesPU1,%00111111,%11110001,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
+	pulsenote	NotesPU2,%10111111,%11000011,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
+
+	ld	a,[hNoteIndex]	; increment index of note in song
+	inc	a
+	and	SongLength-1
+	ld	[hNoteIndex],a
+
 	ret
 
 begin::
@@ -137,6 +154,36 @@ begin::
 	ld	a,%00011011
 	ldh	[rOBP1],a	; and 1
 
+	; clear screen RAM
+	ld	a,$20
+	ld	hl,_SCRN0
+	ld	bc,32*32
+	call	mem_Set
+
+	; zero out OAM (sprite RAM)
+	ldz
+	ld	hl,_OAMRAM
+	ld	bc,160
+	call	mem_Set
+
+	; zero out allocated HRAM
+	ldz
+	ld	hl,_HIRAM
+	ld	bc,_HIRAM_END-_HIRAM
+	call	mem_Set
+
+	; enable sound registers
+	ld	a,%10000000		; enable sound
+	ld	[rNR52],a
+	ld	a,%01110111		; left and right channel volume
+	ld	[rNR50],a
+	ld	a,%00010010		; hard-pan PU1 (left) and PU2 (right) outputs
+	ld	[rNR51],a
+
+	; enable PU1 and PU2
+	ld	a,%10000011
+	ld	[rNR52],a
+
 ; printable ascii
 	ld	hl,Font
 	ld	de,_TILE0
@@ -147,12 +194,6 @@ begin::
 	ld	de,_TILE0 + ($10 * StarTile)
 	ld	bc,16*8		; size of all eight star sprites
 	call	mem_Copy
-
-; Clear screen
-	ld	a,$20
-	ld	hl,_SCRN0
-	ld	bc,32*32
-	call	mem_Set
 
 WriteCenter: macro		; write a line of text in the center of the screen
 	ld	hl,\1
@@ -190,12 +231,6 @@ WriteCenter: macro		; write a line of text in the center of the screen
 	ld	a,1
 	ld	[de],a
 
-	; clear oam
-	ldz
-	ld	hl,_OAMRAM
-	ld	bc,160
-	call	mem_Set
-
 LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,16+(8*(\4))		; y, first sprite top-offset by 16
 	ld	[_OAMRAM+((\1)*4)],a
@@ -212,28 +247,9 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	LoadSprite	2,StarTile+$4,$01,$b,0
 	LoadSprite	3,StarTile+$6,$12,$b,OAMF_XFLIP
 
-	; enable sound registers
-	ld	a,%10000000		; enable sound (keep pu1 off for now)
-	ld	[rNR52],a
-	ld	a,%01110111		; left and right channel volume
-	ld	[rNR50],a
-	ld	a,%00010001		; enable left and right PU1 output only
-	ld	[rNR51],a
-
-	; enable pu1
-	ld	a,%10000001
-	ld	[rNR52],a
-
 	; turn screen on
 	ld	a,LCDCF_ON|LCDCF_BG8000|LCDCF_BG9800|LCDCF_BGON|LCDCF_OBJ8|LCDCF_OBJON;
 	ld	[rLCDC],a
-
-	ldz
-	ld	[hSongRepeated],a	; whether the song has repeated yet
-	ld	[hSprCycleStall],a	; slow down animations by skipping some frames
-	ld	[hPU1Dur],a		; initial note duration
-	ld	[hPU1NoteIndex],a	; index of current note in the note table (LSB)
-	ld	[hSpriteIndex],a
 
 	; set up interrupt
 	ld	a,IEF_VBLANK
@@ -340,12 +356,12 @@ VBlank::
 	; advance animation delay
 	ld	a,[hSprCycleStall]
 	inc	a
-	and	(1<<pSpriteCycleSpeed)-1	; truncate to just a couple LSBs
+	and	(1<<pSprCycleSpeed)-1	; truncate to just a couple LSBs
 	ld	[hSprCycleStall],a
 
 	ld	hl,_OAMRAM	; get the first sprite
 	ldz		; reset sprite index
-	ld	[hSpriteIndex],a
+	ld	[hSprIndex],a
 .loop
 	ld	a,[hSongRepeated]	; if we're not scrolling yet, jump to sprite cycling
 	cpz
@@ -387,14 +403,14 @@ endr
 	inc	hl		; go to the next sprite in OAMRAM...
 	inc	hl
 .next_noadvance
-	ld	a,[hSpriteIndex]	; increment the sprite counter
+	ld	a,[hSprIndex]	; increment the sprite counter
 	inc	a
-	ld	[hSpriteIndex],a	; increment the sprite counter
+	ld	[hSprIndex],a	; increment the sprite counter
 	cp	pNumSprites		; repeat for each sprite
 	jr	nz,.loop
 
 .end
-	call PU1Note
+	call HandleNotes
 	reti
 
 ; vim: se ft=rgbds:
