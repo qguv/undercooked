@@ -74,7 +74,7 @@ as4	rb 1
 b4	rb 1
 REST	rb 1
 
-NoteFreqs:
+NoteFreqs
 	dw	c2_freq, cs2_freq, d2_freq, ds2_freq, \
 		e2_freq, f2_freq, fs2_freq, g2_freq, \
 		gs2_freq, a2_freq, as2_freq, b2_freq, \

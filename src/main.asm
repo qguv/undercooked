@@ -15,17 +15,17 @@ include "src/music.asm"		; music note frequencies
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-pSprCycleSpeed	equ 2		; speed of star animation, higher is exponentially slower
-pNoteLength	equ 11		; note length in vblank frames (~160ms)
-pNumSprites	equ 4		; number of sprites on the screen
+SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
+NOTE_LENGTH	equ 11		; note length in vblank frames (~160ms)
+NUM_SPRITES	equ 4		; number of sprites on the screen
 
 		rsset _HIRAM
-hButtons	rb 1		; bitmask of which buttons are being held
-hSongRepeated	rb 1		; when the song repeats for the first time, start scrolling
-hSprCycleStall	rb 1		; delay counter between sprite tile cycling animation frames
-hSprIndex	rb 1		; used to loop through animating/moving sprites
-hNoteDur	rb 1		; counter for frames within note
-hNoteIndex	rb 1		; index of note in song
+buttons		rb 1		; bitmask of which buttons are being held
+song_repeated	rb 1		; when the song repeats for the first time, start scrolling
+spr_cycle_stall	rb 1		; delay counter between sprite tile cycling animation frames
+spr_index	rb 1		; used to loop through animating/moving sprites
+note_dur	rb 1		; counter for frames within note
+note_index	rb 1		; index of note in song
 _HIRAM_END	rb 0
 
 Font:
@@ -79,27 +79,27 @@ Star: incbin "obj/star.2bpp"
 StarTile equ $80
 
 HandleNotes:
-	ld	a,[hNoteDur]		; if duration of previous note is expired, continue
+	ld	a,[note_dur]		; if duration of previous note is expired, continue
 	cpz
 	jr	z,.next_note
 	dec	a			; otherwise decrement and return
-	ld	[hNoteDur],a
+	ld	[note_dur],a
 	ret
 
 .next_note
-	ld	a,pNoteLength		; set next note duration
-	ld	[hNoteDur],a
+	ld	a,NOTE_LENGTH		; set next note duration
+	ld	[note_dur],a
 
-	ld	a,[hNoteIndex]		; get note index
+	ld	a,[note_index]		; get note index
 	cpz				; if hPU1NoteIndex isn't zero, fine...
 	jr	nz,.sound_registers
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
-	ld	[hSongRepeated],a
+	ld	[song_repeated],a
 
 pulsenote: macro
 	; index the notes-in-song table with the note song-index to get the actual note value
 	ld	b,0
-	ld	a,[hNoteIndex]
+	ld	a,[note_index]
 	ld	c,a
 	ld	hl,\1
 	add	hl,bc
@@ -136,10 +136,10 @@ pulsenote: macro
 	pulsenote	NotesPU1,%00111111,%11110001,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
 	pulsenote	NotesPU2,%10111111,%11000011,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
 
-	ld	a,[hNoteIndex]	; increment index of note in song
+	ld	a,[note_index]	; increment index of note in song
 	inc	a
 	and	SongLength-1
-	ld	[hNoteIndex],a
+	ld	[note_index],a
 
 	ret
 
@@ -326,19 +326,19 @@ ReadJoypad:
 	or	B		; put A and B together
 
 	;ld	B,A		; store A in D
-	;ld	A,[hButtonsOld]	; read old joy data from ram
+	;ld	A,[buttons_old]	; read old joy data from ram
 	;xor	B		; toggle w/current button bit
 	;and	B		; get current button bit back
-	ld	[hButtons],A	; save in new Joydata storage
+	ld	[buttons],A	; save in new Joydata storage
 	;ld	A,B		; put original value in A
-	;ld	[hButtonsOld],A	; store it as old joy data
+	;ld	[buttons_old],A	; store it as old joy data
 	ld	A,P1F_5|P1F_4	; deselect P14 and P15
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
 ; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	ld	a,[hSongRepeated]		; if the music hasn't repeated yet, don't scroll, skip directly to sprites
+	ld	a,[song_repeated]		; if the music hasn't repeated yet, don't scroll, skip directly to sprites
 	cpz
 	jr	z,.animate_sprites
 
@@ -354,16 +354,16 @@ VBlank::
 
 .animate_sprites
 	; advance animation delay
-	ld	a,[hSprCycleStall]
+	ld	a,[spr_cycle_stall]
 	inc	a
-	and	(1<<pSprCycleSpeed)-1	; truncate to just a couple LSBs
-	ld	[hSprCycleStall],a
+	and	(1<<SPR_CYCLE_SPEED)-1	; truncate to just a couple LSBs
+	ld	[spr_cycle_stall],a
 
 	ld	hl,_OAMRAM	; get the first sprite
 	ldz		; reset sprite index
-	ld	[hSprIndex],a
+	ld	[spr_index],a
 .loop
-	ld	a,[hSongRepeated]	; if we're not scrolling yet, jump to sprite cycling
+	ld	a,[song_repeated]	; if we're not scrolling yet, jump to sprite cycling
 	cpz
 	jr	z,.cycle_sprite
 
@@ -391,7 +391,7 @@ endr
 	inc	hl		; go to the tile selection byte of the sprite (2 cycles
 	inc	hl		; (two increments is 4 cycles, vs 16-bit load (3) and add (2) (5 total))
 
-	ld	a,[hSprCycleStall]	; check if we're in a frame when we're supposed to cycle
+	ld	a,[spr_cycle_stall]	; check if we're in a frame when we're supposed to cycle
 	cpz
 	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
@@ -403,10 +403,10 @@ endr
 	inc	hl		; go to the next sprite in OAMRAM...
 	inc	hl
 .next_noadvance
-	ld	a,[hSprIndex]	; increment the sprite counter
+	ld	a,[spr_index]	; increment the sprite counter
 	inc	a
-	ld	[hSprIndex],a	; increment the sprite counter
-	cp	pNumSprites		; repeat for each sprite
+	ld	[spr_index],a	; increment the sprite counter
+	cp	NUM_SPRITES		; repeat for each sprite
 	jr	nz,.loop
 
 .end
