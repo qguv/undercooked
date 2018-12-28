@@ -20,7 +20,7 @@ includes := $(PYTHON2) $(EXTRASDIR)/pokemontools/scan_includes.py
 .SECONDEXPANSION:
 # Suppress annoying intermediate file deletion messages.
 .PRECIOUS: %.2bpp
-.PHONY: all clean compare play
+.PHONY: all clean debug optimcheck play
 
 VPATH = $(SRCDIR) $(LIBDIR) $(SPRITEDIR)
 
@@ -51,6 +51,13 @@ $(OBJDIR)/%.pic: %.2bpp
 play: all
 	$(BGB) -nobatt $(OUTDIR)/main.gb
 
+debug: all
+	$(BGB) -setting StartDebug=1 -nobatt $(OUTDIR)/main.gb
+
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(OUTDIR)/main.gb
+
+optimcheck:
+	@ag '^\s*(ld\s+a,0|cp\s+0)' --ignore '*.txt' && exit 1 || exit 0
+	@printf "No easily optimizable statements found! Nice work!\n"

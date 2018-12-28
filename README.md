@@ -18,3 +18,8 @@ playing game
 4. install wine
 5. download bgb (for windows, 32- or 64-bit depending on your wine installation) and extract into `extras/bgb`
 6. `make clean play`
+
+## development
+
+1. make some changes
+2. run `make optimcheck` to make sure you didn't miss any easily optimizable instructions
