@@ -16,9 +16,9 @@ include "src/music.inc"		; music note frequencies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 pSpriteCycleSpeed equ 2		; speed of star animation, higher is exponentially slower
-pNoteDuration equ 11            ; note length in vblank frames (~160ms)
-pNoteEnvelope equ %11110001     ; envelope, precisely like LSDj
-pNumSprites equ 4               ; number of sprites on the screen
+pNoteDuration equ 11		; note length in vblank frames (~160ms)
+pNoteEnvelope equ %11110001	; envelope, precisely like LSDj
+pNumSprites equ 4		; number of sprites on the screen
 
 		rsset _HIRAM
 hButtons	rb 1
@@ -28,7 +28,7 @@ hPU1Dur		rb 1
 hPU1NoteIndex	rb 1
 hSpriteIndex	rb 1
 
-TileData:
+Font:
 	chr_IBMPC1	1,8
 
 Found1_len equ 12
@@ -138,7 +138,7 @@ begin::
 	ldh	[rOBP1],a	; and 1
 
 ; printable ascii
-	ld	hl,TileData
+	ld	hl,Font
 	ld	de,_TILE0
 	ld	bc,8*128	; length (8 bytes per tile) x (256 tiles)
 	call	mem_CopyMono	; Copy tile data to memory
