@@ -16,5 +16,5 @@ building binary:
 playing game
 
 4. install wine
-5. download bgb.exe to this directory
+5. download bgb (for windows, 32- or 64-bit depending on your wine installation) and extract into `extras/bgb`
 6. `make clean play`

@@ -5,7 +5,7 @@ SPRITEDIR = sprites
 LIBDIR = lib
 EXTRASDIR = extras
 
-BGB := wine bgb.exe
+BGB := wine $(EXTRASDIR)/bgb/bgb.exe
 PYTHON2 := python2
 MD5 := md5sum -c --quiet
 
