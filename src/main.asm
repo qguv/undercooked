@@ -91,7 +91,7 @@ HandleNotes:
 	ld	[note_dur],a
 
 	ld	a,[note_index]		; get note index
-	cpz				; if hPU1NoteIndex isn't zero, fine...
+	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
 	jr	nz,.sound_registers
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
 	ld	[song_repeated],a
