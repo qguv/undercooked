@@ -174,11 +174,11 @@ begin::
 
 	; enable sound registers
 	ld	a,%10000000		; enable sound
-	ld	[rNR52],a
+	ld	[rAUDENA],a
 	ld	a,%01110111		; left and right channel volume
-	ld	[rNR50],a
+	ld	[rAUDVOL],a
 	ld	a,%00010010		; hard-pan PU1 (left) and PU2 (right) outputs
-	ld	[rNR51],a
+	ld	[rAUDTERM],a
 
 	; enable PU1 and PU2
 	ld	a,%10000011
