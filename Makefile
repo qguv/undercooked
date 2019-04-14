@@ -5,7 +5,7 @@ SPRITEDIR = sprites
 LIBDIR = lib
 EXTRASDIR = extras
 
-BGB := wine $(EXTRASDIR)/bgb/bgb.exe
+BGB := bgb
 PYTHON2 := python2
 MD5 := md5sum -c --quiet
 
@@ -24,7 +24,7 @@ includes := $(PYTHON2) $(EXTRASDIR)/pokemontools/scan_includes.py
 
 VPATH = $(SRCDIR) $(LIBDIR) $(SPRITEDIR)
 
-all: $(OBJDIR)/star.2bpp $(OUTDIR)/main.gb
+all: $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OUTDIR)/main.gb
 
 %.asm: ;
 
