@@ -16,7 +16,6 @@ include "src/music.asm"		; music note frequencies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
-NOTE_LENGTH	equ 11		; note length in vblank frames (~160ms)
 NUM_SPRITES	equ 2		; number of sprites on the screen
 
 		rsset _HIRAM
@@ -25,6 +24,7 @@ song_repeated	rb 1		; when the song repeats for the first time, start scrolling
 spr_cycle_stall	rb 1		; delay counter between sprite tile cycling animation frames
 spr_index	rb 1		; used to loop through animating/moving sprites
 note_dur	rb 1		; counter for frames within note
+note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
 _HIRAM_END	rb 0
 
@@ -42,6 +42,16 @@ NotesPU2:
 		KILL,REST,d3,d3,d3,d3,d3,REST, \
 		d3,REST,d3,REST,e3,REST,e3,fs3, \
 		KILL,REST,fs3,fs3,fs3,fs3,fs3,fs4
+NotesWAV:
+	db	fs3,fs3,fs3,REST,e3,e3,REST,d3, \
+		REST,REST,d3,d3,d3,d3,d3,REST, \
+		d3,d3,d3,REST,e3,e3,REST,fs3, \
+		REST,REST,fs3,fs3,fs3,fs3,fs3,fs4
+
+NoteDuration: ; in number of vblanks, this table will be cycled
+	db	9, 7
+
+NoteDurationEntries equ 2
 
 BytesPerTile equ 16
 BytesPerFrame equ BytesPerTile * 2	; working with 8x16 sprites here
@@ -72,9 +82,22 @@ HandleNotes:
 	ret
 
 .next_note
-	ld	a,NOTE_LENGTH		; set next note duration
+	ld	a,[note_swindex]
+	ld	hl,NoteDuration
+	add	a,l			; add index into note duration table
+	ld	l,a
+	adc	a,h
+	sub	l
+	ld	h,a
+	ld	a,[hl]			; set next note duration
 	ld	[note_dur],a
-
+	ld	a,[note_swindex]	; increase note swing index
+	inc	a
+	cp	NoteDurationEntries	; wrap if necessary
+	jr	c,.dont_wrap
+	ldz
+.dont_wrap
+	ld	[note_swindex],a
 	ld	a,[note_index]		; get note index
 	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
 	jr	nz,.sound_registers
