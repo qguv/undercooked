@@ -38,10 +38,10 @@ NotesPU1:
 		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
 		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
 NotesPU2:
-	db	fs3,REST,fs3,REST,e3,REST,REST,REST, \
-		d3,REST,d3,REST,d3,REST,d3,d4, \
-		d3,REST,d3,REST,e3,REST,REST,REST, \
-		fs3,REST,fs3,REST,fs3,REST,e4,fs4
+	db	fs3,REST,fs3,REST,e3,REST,e3,d3, \
+		KILL,REST,d3,d3,d3,d3,d3,REST, \
+		d3,REST,d3,REST,e3,REST,e3,fs3, \
+		KILL,REST,fs3,fs3,fs3,fs3,fs3,fs4
 
 BytesPerTile equ 16
 BytesPerFrame equ BytesPerTile * 2	; working with 8x16 sprites here
@@ -93,6 +93,18 @@ pulsenote: macro
 	ld	a,c			; if it's a rest, don't set any registers for this note
 	cp	REST
 	jr	z,.end\@
+
+	cp	KILL			; if it's a kill command, stop the note
+	jr	nz,.nocut\@
+	ldz
+	;ld	[\4],a
+	;ld	[\5],a
+	ld	[\6],a
+	;ld	[\7],a
+	ld	a,$80
+	ld	[\8],a
+	jr	.end\@
+.nocut\@
 
 	; index the note frequency table with the actual note value to get the note frequency (16-bit)
 	ld	b,0

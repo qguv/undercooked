@@ -73,6 +73,7 @@ a4	rb 1
 as4	rb 1
 b4	rb 1
 REST	rb 1
+KILL	rb 1
 
 NoteFreqs
 	dw	c2_freq, cs2_freq, d2_freq, ds2_freq, \
