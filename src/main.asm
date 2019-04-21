@@ -240,9 +240,9 @@ endr
 	jr	nz,.loop
 
 LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
-	ld	a,16+(8*(\4))		; y, first sprite top-offset by 16
-	ld	[_OAMRAM+((\1)*4)],a
-	ld	a,8+(8*(\3))		; x, first sprite left-offset by 8
+	ld	a,16+\4			; y, first sprite top-offset by 16
+	ld	[_OAMRAM+(\1)*4],a
+	ld	a,8+\3			; x, first sprite left-offset by 8
 	ld	[_OAMRAM+((\1)*4)+1],a
 	ld	a,\2
 	ld	[_OAMRAM+((\1)*4)+2],a	; tile
@@ -251,9 +251,9 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	endm
 
 spriteno set 0
-	LoadSprite	spriteno,StarBeginIndex,$01,$6,0
+	LoadSprite	spriteno,StarBeginIndex,$55,$1e,0
 spriteno set spriteno + 1
-	LoadSprite	spriteno,StarBeginIndex + 4,$12,$6,OAMF_XFLIP
+	LoadSprite	spriteno,StarBeginIndex + 4,$65,$1e,OAMF_XFLIP
 spriteno set spriteno + 1
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ16 | LCDCF_OBJON
