@@ -30,19 +30,19 @@ $(OUTDIR)/%.gb: $(OBJDIR)/%.o
 	rgblink -n $(OBJDIR)/$*.sym -o $@ $<
 	rgbfix -v -p 0 $@
 
-$(OBJDIR)/%.2bpp: sprites/%.png
+$(OBJDIR)/%.2bpp: $(SPRITEDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -o $@ $<
 
-$(OBJDIR)/%.2bpp: maps/%.png
+$(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
 
-$(OBJDIR)/%.1bpp: sprites/%.png
+$(OBJDIR)/%.1bpp: $(SPRITEDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -o $@ $<
 
-$(OBJDIR)/%.1bpp: maps/%.png
+$(OBJDIR)/%.1bpp: $(MAPDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
 

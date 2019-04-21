@@ -69,7 +69,7 @@ tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
 
 Star: incbin "obj/star.2bpp"
 StarFrames equ 8
-StarTilesPerFrame equ 2
+StarTilesPerFrame equ 1
 StarBeginIndex equ tile_i
 tile_i set tile_i + (StarFrames * StarTilesPerFrame)
 tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
@@ -256,12 +256,12 @@ spriteno set spriteno + 1
 	LoadSprite	spriteno,StarBeginIndex + 4,$65,$1e,OAMF_XFLIP
 spriteno set spriteno + 1
 
-	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ16 | LCDCF_OBJON
+	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
 	; turn LCD on
 	; use 8000-8FFF for bg and window tile data
 	; use 9800-9BFF for tiles
 	; enable background
-	; use 8x16 sprites
+	; use 8x8 sprites
 	; enable sprites
 
 	ld	[rLCDC],a
@@ -369,7 +369,7 @@ VBlank::
 	cpz
 	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
-	cp	StarBeginIndex + (StarFrames * StarTilesPerFrame) - StarTilesPerFrame	; do we need to reset?
+	cp	StarBeginIndex + ((StarFrames - 1) * StarTilesPerFrame) ; do we need to reset?
 	jr	z,.cyclereset
 	jr	.cycleincrement
 
@@ -378,8 +378,9 @@ VBlank::
 	jr	.write
 
 .cycleincrement
+rept StarTilesPerFrame
 	inc	a		; advance to the next tile...
-	inc	a
+endr
 	jr	.write
 
 .write
