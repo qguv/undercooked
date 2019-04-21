@@ -17,6 +17,7 @@ include "src/music.asm"		; music note frequencies
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
 NUM_SPRITES	equ 2		; number of sprites on the screen
+MOVE_SPEED	equ 2		; how many pixels to move per vblank (integral)
 
 		rsset _HIRAM
 buttons		rb 1		; bitmask of which buttons are being held
@@ -26,6 +27,10 @@ spr_index	rb 1		; used to loop through animating/moving sprites
 note_dur	rb 1		; counter for frames within note
 note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
+scrollx		rb 1
+scrolly		rb 1
+spritedx	rb 1
+spritedy	rb 1
 _HIRAM_END	rb 0
 
 		rsset _RAM
@@ -239,6 +244,18 @@ endr
 	cp	low(TilemapEnd)
 	jr	nz,.loop
 
+	ld	h,d
+	ld	l,e
+.floor
+	ld	a,$4e
+	ld	[hl+],a
+	ld	a,h
+	cp	high(_SCRN1)
+	jr	nz,.floor
+	ld	a,l
+	cp	low(_SCRN1)
+	jr	nz,.floor
+
 LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,16+\4			; y, first sprite top-offset by 16
 	ld	[_OAMRAM+(\1)*4],a
@@ -350,6 +367,83 @@ endr
 
 ; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
+	ldz
+	ld	[spritedx],a
+	ld	[spritedy],a
+
+	call ReadJoypad
+
+.try_right
+	ld	a,[buttons]
+	and	a,$10
+	jr	z,.try_left
+	ld	a,[scrollx]
+	cp	$60
+	jr	nc,.try_left
+rept MOVE_SPEED
+	inc	a
+endr
+	ld	[scrollx],a
+	ldz
+rept MOVE_SPEED
+	dec	a
+endr
+	ld	[spritedx],a
+	jr	.try_up
+.try_left
+	ld	a,[buttons]
+	and	a,$20
+	jr	z,.try_up
+	ld	a,[scrollx]
+	cpz
+	jr	z,.try_up
+rept MOVE_SPEED
+	dec	a
+endr
+	ld	[scrollx],a
+	ldz
+rept MOVE_SPEED
+	inc	a
+endr
+	ld	[spritedx],a
+.try_up
+	ld	a,[buttons]
+	and	a,$40
+	jr	z,.try_down
+	ld	a,[scrolly]
+	cpz
+	jr	z,.try_down
+rept MOVE_SPEED
+	dec	a
+endr
+	ld	[scrolly],a
+	ldz
+rept MOVE_SPEED
+	inc	a
+endr
+	ld	[spritedy],a
+	jr	.scroll
+.try_down
+	ld	a,[buttons]
+	and	a,$80
+	jr	z,.scroll
+	ld	a,[scrolly]
+	cp	$70
+	jr	nc,.scroll
+rept MOVE_SPEED
+	inc	a
+endr
+	ld	[scrolly],a
+	ldz
+rept MOVE_SPEED
+	dec	a
+endr
+	ld	[spritedy],a
+.scroll
+	ld	a,[scrollx]
+	ld	[rSCX],a
+	ld	a,[scrolly]
+	ld	[rSCY],a
 .animate_sprites
 	; advance animation delay
 	ld	a,[spr_cycle_stall]
@@ -362,8 +456,19 @@ VBlank::
 	ld	[spr_index],a
 
 .cycle_sprite
+	ld	a,[spritedy]	; y coordinate
+	ld	b,[hl]
+	add	a,b
+	ld	[hl],a
+
 	inc	hl		; go to the tile selection byte of the sprite (2 cycles
-	inc	hl		; (two increments is 4 cycles, vs 16-bit load (3) and add (2) (5 total))
+
+	ld	a,[spritedx]	; x coordinate
+	ld	b,[hl]
+	add	a,b
+	ld	[hl],a
+
+	inc	hl
 
 	ld	a,[spr_cycle_stall]	; check if we're in a frame when we're supposed to cycle
 	cpz
