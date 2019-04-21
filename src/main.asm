@@ -28,6 +28,9 @@ note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
 _HIRAM_END	rb 0
 
+		rsset _RAM
+_RAM_END	rb 0
+
 Font:
 	chr_IBMPC1	1,8
 
@@ -54,24 +57,25 @@ NoteDuration: ; in number of vblanks, this table will be cycled
 NoteDurationEntries equ 2
 
 BytesPerTile equ 16
-BytesPerFrame equ BytesPerTile * 2	; working with 8x16 sprites here
 
 tile_i set 0
 
+Tileset: incbin "obj/tileset.2bpp"
+TilesetFrames equ $A1
+TilesetTilesPerFrame equ 1
+TilesetBeginIndex equ tile_i
+tile_i set tile_i + (TilesetFrames * TilesetTilesPerFrame)
+tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
+
 Star: incbin "obj/star.2bpp"
 StarFrames equ 8
+StarTilesPerFrame equ 2
 StarBeginIndex equ tile_i
-tile_i set tile_i + StarFrames
+tile_i set tile_i + (StarFrames * StarTilesPerFrame)
+tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
 
-Table: incbin "obj/table.2bpp"
-TableFrames equ 2
-TableBeginIndex equ tile_i
-tile_i set tile_i + TableFrames
-
-Ground: incbin "obj/ground.2bpp"
-GroundFrames equ 2
-GroundBeginIndex equ tile_i
-tile_i set tile_i + GroundFrames
+Tilemap: incbin "obj/tileset.tilemap"
+TilemapEnd:
 
 HandleNotes:
 	ld	a,[note_dur]		; if duration of previous note is expired, continue
@@ -120,10 +124,7 @@ pulsenote: macro
 	cp	KILL			; if it's a kill command, stop the note
 	jr	nz,.nocut\@
 	ldz
-	;ld	[\4],a
-	;ld	[\5],a
 	ld	[\6],a
-	;ld	[\7],a
 	ld	a,$80
 	ld	[\8],a
 	jr	.end\@
@@ -170,9 +171,10 @@ begin::
 
 	ld	a,%11100100	; Window palette colors, from darkest to lightest
 	ld	[rBGP],a	; Setup the default background palette
+	ld	a,%11100100
+	;                ^^ not used, always transparent
 	ldh	[rOBP0],a	; set sprite pallette 0
-	ld	a,%00011011
-	ldh	[rOBP1],a	; and 1
+	ldh	[rOBP1],a	; set sprite pallette 1
 
 	; clear screen RAM
 	ld	a,$20
@@ -206,34 +208,36 @@ begin::
 
 ; write tiles from ROM into tile memory
 vram_addr set $8000
+	ld	hl,Tileset
+	ld	de,vram_addr
+	ld	bc,TilesetFrames*TilesetTilesPerFrame*BytesPerTile	; size of the ground frames together
+	call	mem_Copy
+vram_addr set vram_addr + (TilesetFrames*TilesetTilesPerFrame + (TilesetFrames % 2)) * BytesPerTile
+
 	ld	hl,Star
 	ld	de,vram_addr
-	ld	bc,StarFrames*BytesPerFrame	; size of all eight star frames together
-vram_addr set vram_addr + StarFrames*BytesPerFrame
+	ld	bc,StarFrames*StarTilesPerFrame*BytesPerTile	; size of all eight star frames together
 	call	mem_Copy
-
-	ld	hl,Table
-	ld	de,vram_addr
-	ld	bc,TableFrames*BytesPerFrame	; size of the table frames together
-vram_addr set vram_addr + TableFrames*BytesPerFrame
-	call	mem_Copy
-
-	ld	hl,Ground
-	ld	de,vram_addr
-	ld	bc,GroundFrames*BytesPerFrame	; size of the ground frames together
-vram_addr set vram_addr + GroundFrames*BytesPerFrame
-	call	mem_Copy
+vram_addr set vram_addr + (StarFrames*StarTilesPerFrame + (StarFrames % 2)) * BytesPerTile
 
 	; blit background
-	ld	hl,_SCRN0
+	ld	de,_SCRN0
+	ld	hl,Tilemap
 .loop
-	ld	a,$14
-	ld	[hl],a
-	inc	hl
-	ld	a,h
-	cp	high(_SCRN1)
-	jr	c,.loop
-	;10+12, 14+16 rest
+	nop
+rept $20
+	ld	a,[hl+]
+	ld	[de],a
+	inc	de
+endr
+	ld	bc,8		; add 8 to tilemap addr
+	add	hl,bc
+	ld	a,h		; check if we're at the end
+	cp	high(TilemapEnd)
+	jr	nz,.loop
+	ld	a,l
+	cp	low(TilemapEnd)
+	jr	nz,.loop
 
 LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,16+(8*(\4))		; y, first sprite top-offset by 16
@@ -246,8 +250,11 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	[_OAMRAM+((\1)*4)+3],a	; flags
 	endm
 
-	LoadSprite	0,$0,$01,$6,0
-	LoadSprite	1,$4,$12,$6,OAMF_XFLIP
+spriteno set 0
+	LoadSprite	spriteno,StarBeginIndex,$01,$6,0
+spriteno set spriteno + 1
+	LoadSprite	spriteno,StarBeginIndex + 4,$12,$6,OAMF_XFLIP
+spriteno set spriteno + 1
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ16 | LCDCF_OBJON
 	; turn LCD on
@@ -362,9 +369,20 @@ VBlank::
 	cpz
 	jr	nz,.next
 	ld	a,[hl]		; get some sprite's tile
+	cp	StarBeginIndex + (StarFrames * StarTilesPerFrame) - StarTilesPerFrame	; do we need to reset?
+	jr	z,.cyclereset
+	jr	.cycleincrement
+
+.cyclereset
+	ld	a,StarBeginIndex
+	jr	.write
+
+.cycleincrement
 	inc	a		; advance to the next tile...
 	inc	a
-	and	a,$f		; ...truncating to stay within the 8 star frames
+	jr	.write
+
+.write
 	ld	[hl],a		; advance sprite to its next tile
 .next
 	inc	hl		; go to the next sprite in OAMRAM...

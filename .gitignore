@@ -1,4 +1,3 @@
-*.sym
 *.gb
-*.o
-*.2bpp
+*.sav
+obj
