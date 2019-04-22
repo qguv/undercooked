@@ -1,6 +1,7 @@
 include "lib/gbhw.inc"		; hardware descriptions
 include "lib/ibmpc1.inc"	; font
 include "src/optim.inc"		; optimized instruction aliases
+include "src/debug.inc"		; debug instructions for bgb
 
 include "src/interrupts.asm"
 
@@ -16,25 +17,35 @@ include "src/music.asm"		; music note frequencies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
-NUM_SPRITES	equ 2		; number of sprites on the screen
-MOVE_SPEED	equ 2		; how many pixels to move per vblank (integral)
+NUM_SPRITES	equ 2		; number of sprites to cycle
 
 		rsset _HIRAM
-buttons		rb 1		; bitmask of which buttons are being held
+buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated	rb 1		; when the song repeats for the first time, start scrolling
 spr_cycle_stall	rb 1		; delay counter between sprite tile cycling animation frames
 spr_index	rb 1		; used to loop through animating/moving sprites
 note_dur	rb 1		; counter for frames within note
 note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
-scrollx		rb 1
-scrolly		rb 1
-spritedx	rb 1
-spritedy	rb 1
+duration	rb 1		; how many vblank frames of the current directive are left
+dx		rb 1
+dy		rb 1
 _HIRAM_END	rb 0
+if _HIRAM_END > $FFFE
+	fail "Allocated HIRAM exceeds HIRAM space!"
+endc
 
 		rsset _RAM
 _RAM_END	rb 0
+
+joy_right equ $10
+joy_left equ $20
+joy_up equ $40
+joy_down equ $80
+joy_a equ $01
+joy_b equ $02
+joy_start equ $04
+joy_select equ $08
 
 Font:
 	chr_IBMPC1	1,8
@@ -268,9 +279,58 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	endm
 
 spriteno set 0
+
+StarSprite1 equ spriteno
 	LoadSprite	spriteno,StarBeginIndex,$55,$1e,0
 spriteno set spriteno + 1
+
+StarSprite2 equ spriteno
 	LoadSprite	spriteno,StarBeginIndex + 4,$65,$1e,OAMF_XFLIP
+spriteno set spriteno + 1
+
+; head
+PlayerSpriteHL equ spriteno
+	LoadSprite	spriteno,$4a,$46,$3c,0
+spriteno set spriteno + 1
+
+PlayerSpriteHR equ spriteno
+	LoadSprite	spriteno,$4a,$4e,$3c,OAMF_XFLIP
+spriteno set spriteno + 1
+
+; neck
+PlayerSpriteNL equ spriteno
+	LoadSprite	spriteno,$4a,$46,$44,OAMF_YFLIP
+spriteno set spriteno + 1
+
+PlayerSpriteNR equ spriteno
+	LoadSprite	spriteno,$4a,$4e,$44,OAMF_XFLIP | OAMF_YFLIP
+spriteno set spriteno + 1
+
+; chest
+PlayerSpriteCL equ spriteno
+	LoadSprite	spriteno,$37,$48,$46,0
+spriteno set spriteno + 1
+
+PlayerSpriteCR equ spriteno
+	LoadSprite	spriteno,$39,$50,$46,0
+spriteno set spriteno + 1
+
+; butt
+PlayerSpriteBL equ spriteno
+	LoadSprite	spriteno,$64,$48,$4e,0
+spriteno set spriteno + 1
+
+PlayerSpriteBR equ spriteno
+	LoadSprite	spriteno,$66,$50,$4e,0
+spriteno set spriteno + 1
+
+; legs
+PlayerSpriteLL equ spriteno
+	LoadSprite	spriteno,$42,$48,$56,0
+spriteno set spriteno + 1
+
+PlayerSpriteLR equ spriteno
+	LoadSprite	spriteno,$45,$50,$56,0
 spriteno set spriteno + 1
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
@@ -365,85 +425,79 @@ endr
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
-; each frame, advance all sprites to their next tile and scroll down if needed
 VBlank::
-	ldz
-	ld	[spritedx],a
-	ld	[spritedy],a
+	ld	a,[duration]
+	cpz
+	jr nz,.scroll_screen_dur_a		; if the walk cycle isn't over, don't read buttons, just scroll
 
+;walkcycleover
 	call ReadJoypad
+	ld	a,[buttons]
+	and	$f0			; is a movement button held?
+	jr	nz,.parsemovement	; if so, process it
+;haltmovement
+	ldz				; clear out current movement command
+	ld	[dx],a
+	ld	[dy],a
+	jr	.animate_sprites
 
-.try_right
+.parsemovement
+	ld	a,8			; restart animation counter
+	ld	[duration],a
 	ld	a,[buttons]
-	and	a,$10
-	jr	z,.try_left
-	ld	a,[scrollx]
-	cp	$60
-	jr	nc,.try_left
-rept MOVE_SPEED
-	inc	a
-endr
-	ld	[scrollx],a
-	ldz
-rept MOVE_SPEED
-	dec	a
-endr
-	ld	[spritedx],a
-	jr	.try_up
-.try_left
-	ld	a,[buttons]
-	and	a,$20
-	jr	z,.try_up
-	ld	a,[scrollx]
+	and	joy_up | joy_down	; moving up or down?
 	cpz
-	jr	z,.try_up
-rept MOVE_SPEED
-	dec	a
-endr
-	ld	[scrollx],a
-	ldz
-rept MOVE_SPEED
-	inc	a
-endr
-	ld	[spritedx],a
-.try_up
-	ld	a,[buttons]
-	and	a,$40
-	jr	z,.try_down
-	ld	a,[scrolly]
+	jr	z,.xmovement
+;ymovement
+	and	joy_up			; moving up?
 	cpz
-	jr	z,.try_down
-rept MOVE_SPEED
-	dec	a
-endr
-	ld	[scrolly],a
+	jr	nz,.up
+;down
+	ld	a,1			; move down
+	ld	[dy],a
 	ldz
-rept MOVE_SPEED
-	inc	a
-endr
-	ld	[spritedy],a
-	jr	.scroll
-.try_down
+	ld	[dx],a
+	jr	.scroll_screen
+.up
+	ld	a,$ff			; move up
+	ld	[dy],a
+	ldz
+	ld	[dx],a
+	jr	.scroll_screen
+.xmovement
 	ld	a,[buttons]
-	and	a,$80
-	jr	z,.scroll
-	ld	a,[scrolly]
-	cp	$70
-	jr	nc,.scroll
-rept MOVE_SPEED
-	inc	a
-endr
-	ld	[scrolly],a
+	and	joy_left		; moving left?
+	cpz
+	jr	nz,.left
+;right
+	ld	a,1			; move right
+	ld	[dx],a
 	ldz
-rept MOVE_SPEED
+	ld	[dy],a
+	jr	.scroll_screen
+.left
+	ld	a,$ff			; move left
+	ld	[dx],a
+	ldz
+	ld	[dy],a
+	;jr	.scroll_screen
+
+.scroll_screen
+	ld	a,[duration]
+.scroll_screen_dur_a
 	dec	a
-endr
-	ld	[spritedy],a
-.scroll
-	ld	a,[scrollx]
+	ld	[duration],a
+	ld	a,[dx]			; scroll bg viewport dx tiles right
+	ld	b,a
+	ld	a,[rSCX]
+	add	b
 	ld	[rSCX],a
-	ld	a,[scrolly]
+	ld	a,[dy]			; scroll bg viewport dy tiles left
+	ld	b,a
+	ld	a,[rSCY]
+	add	b
 	ld	[rSCY],a
+
 .animate_sprites
 	; advance animation delay
 	ld	a,[spr_cycle_stall]
@@ -456,16 +510,18 @@ endr
 	ld	[spr_index],a
 
 .cycle_sprite
-	ld	a,[spritedy]	; y coordinate
-	ld	b,[hl]
-	add	a,b
+	ld	a,[dy]	; dy -> b
+	ld	b,a
+	ld	a,[hl]	; sprite y -> a
+	sub	b	; sprite y -= dy
 	ld	[hl],a
 
 	inc	hl		; go to the tile selection byte of the sprite (2 cycles
 
-	ld	a,[spritedx]	; x coordinate
-	ld	b,[hl]
-	add	a,b
+	ld	a,[dx]	; dx -> b
+	ld	b,a
+	ld	a,[hl]	; sprite x -> a
+	sub	b	; sprite x -= dx
 	ld	[hl],a
 
 	inc	hl
