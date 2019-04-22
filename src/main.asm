@@ -18,6 +18,7 @@ include "src/music.asm"
 ;________________________'
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
+TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-numbered tiles (useful for 8x16 sprites)
 
 ;---------------,
 ; Allocated RAM ;
@@ -49,27 +50,41 @@ _RAM_END	rb 0
 tile_i set 0
 
 Tileset: incbin "obj/tileset.2bpp"
-TilesetFrames equ $A1
+TilesetFrames equ $a1
 TilesetTilesPerFrame equ 1
 TilesetBeginIndex equ tile_i
 tile_i set tile_i + (TilesetFrames * TilesetTilesPerFrame)
-tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
+if TWO_TILE_ALIGN
+tile_i set tile_i + (tile_i % 2)
+endc
 
 Tilemap: incbin "obj/tileset.tilemap"
 TilemapEnd:
+
+Blacktile:
+rept SCRN_TILE_B
+	db $ff
+endr
+BlacktileFrames equ 1
+BlacktileTilesPerFrame equ 1
+BlacktileBeginIndex equ tile_i
+tile_i set tile_i + (BlacktileFrames * BlacktileTilesPerFrame)
+if TWO_TILE_ALIGN
+tile_i set tile_i + (tile_i % 2)
+endc
 
 Star: incbin "obj/star.2bpp"
 StarFrames equ 8
 StarTilesPerFrame equ 1
 StarBeginIndex equ tile_i
 tile_i set tile_i + (StarFrames * StarTilesPerFrame)
-tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
+if TWO_TILE_ALIGN
+tile_i set tile_i + (tile_i % 2)
+endc
 
-;-----------------------,
-; Convenience constants ;
-;_______________________'
-
-BytesPerTile equ 16
+;-------------,
+; Entry point ;
+;_____________'
 
 begin::
 	di
@@ -113,21 +128,29 @@ begin::
 	ld	a,%10000011
 	ld	[rNR52],a
 
-; write tiles from ROM into tile memory
 vram_addr set $8000
-	ld	hl,Tileset					; source
-	ld	de,vram_addr					; destination
-	ld	bc,TilesetFrames*BytesPerTile			; number of bytes
-	call	mem_Copy
-vram_addr set vram_addr + (TilesetFrames + (TilesetFrames % 2)) * BytesPerTile
 
-	ld	hl,Star						; source
-	ld	de,vram_addr					; destination
-	ld	bc,StarFrames*StarTilesPerFrame*BytesPerTile	; number of bytes
+LoadTiles: macro
+	ld	hl,\1
+	ld	de,vram_addr
+size	set	(\2) * (\3) * SCRN_TILE_B
+	ld	bc,size
 	call	mem_Copy
-vram_addr set vram_addr + (StarFrames * StarTilesPerFrame + (StarFrames % 2)) * BytesPerTile
+vram_addr set vram_addr+size
+	if TWO_TILE_ALIGN
+vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
+	endc
+	endm
 
-	; blit background
+	; write tiles from ROM into tile memory
+	LoadTiles Tileset,TilesetFrames,TilesetTilesPerFrame
+	LoadTiles Blacktile,BlacktileFrames,BlacktileTilesPerFrame
+	LoadTiles Star,StarFrames,StarTilesPerFrame
+
+	; blit tilemap
+if TilesetBeginIndex != 0
+	fail "the first tiles in tile memory must be the tileset used by the tilemap!"
+endc
 	ld	de,_SCRN0
 	ld	hl,Tilemap
 .loop
@@ -149,7 +172,7 @@ endr
 	ld	h,d
 	ld	l,e
 .floor
-	ld	a,$4e
+	ld	a,BlacktileBeginIndex
 	ld	[hl+],a
 	ld	a,h
 	cp	high(_SCRN1)

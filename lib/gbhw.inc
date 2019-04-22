@@ -617,6 +617,8 @@ SCRN_VY    EQU  256 ; Virtual height of screen in pixels
 SCRN_VX_B  EQU  32  ; Virtual width of screen in bytes
 SCRN_VY_B  EQU  32  ; Virtual height of screen in bytes
 
+SCRN_TILE_B EQU 16
+
 NINTENDO_LOGO:   MACRO
 ;*
 ;* Nintendo scrolling logo
