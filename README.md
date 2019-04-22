@@ -1,6 +1,6 @@
-# gbsplash
+# undercooked
 
-A simple splash screen for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too.
+A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too.
 
 ## building
 
@@ -29,18 +29,19 @@ playing game
 addresses:
 
 ```asm
-  .subroutine_label           ; jump labels within subroutines
-  .label_in_macro\@           ; jump labels within macros
-  SomeFunction:               ; a non-exported function
-  SomeData                    ; exported data, probably array/string
-  _GBHW_ADDR or _GBHWADDR     ; gameboy hardware address defined in gbhw.inc
-  some_value                  ; address in hram
+.jump_label                 ; jump labels within subroutines
+;convenience_label          ; begin paragraph that's fallen through to
+.label_in_macro\@           ; jump labels within macros
+SomeFunction:               ; a non-exported function
+SomeData                    ; exported data, probably array/string
+_GBHW_ADDR or _GBHWADDR     ; gameboy hardware address defined in gbhw.inc
+some_value                  ; address in hram
 ```
 
 values:
 
 ```asm
 as3_freq                    ; music frequency (16-bit)
-as3                         ; music note (8-bit index into NoteFreqs
+as3                         ; music note (8-bit index into NoteFreqs)
 SOME_CONSTANT               ; equ-defined constant
 ```

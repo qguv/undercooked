@@ -1,7 +1,6 @@
 include "lib/gbhw.inc"		; hardware descriptions
-include "lib/ibmpc1.inc"	; font
+include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
-include "src/debug.inc"		; debug instructions for bgb
 
 include "src/interrupts.asm"
 
@@ -12,12 +11,17 @@ section "Org $100",ROM0[$100]
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
 include "lib/memory.asm"
-include "src/music.asm"		; music note frequencies
+include "src/music.asm"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;------------------------,
+; Configurable constants ;
+;________________________'
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
-NUM_SPRITES	equ 2		; number of sprites to cycle
+
+;---------------,
+; Allocated RAM ;
+;_______________'
 
 		rsset _HIRAM
 buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
@@ -38,41 +42,9 @@ endc
 		rsset _RAM
 _RAM_END	rb 0
 
-joy_right equ $10
-joy_left equ $20
-joy_up equ $40
-joy_down equ $80
-joy_a equ $01
-joy_b equ $02
-joy_start equ $04
-joy_select equ $08
-
-Font:
-	chr_IBMPC1	1,8
-
-SongLength equ 32	; number of NOTES not BYTES
-NotesPU1:
-	db	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
-		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
-		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
-		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
-NotesPU2:
-	db	fs3,REST,fs3,REST,e3,REST,e3,d3, \
-		KILL,REST,d3,d3,d3,d3,d3,REST, \
-		d3,REST,d3,REST,e3,REST,e3,fs3, \
-		KILL,REST,fs3,fs3,fs3,fs3,fs3,fs4
-NotesWAV:
-	db	fs3,fs3,fs3,REST,e3,e3,REST,d3, \
-		REST,REST,d3,d3,d3,d3,d3,REST, \
-		d3,d3,d3,REST,e3,e3,REST,fs3, \
-		REST,REST,fs3,fs3,fs3,fs3,fs3,fs4
-
-NoteDuration: ; in number of vblanks, this table will be cycled
-	db	9, 7
-
-NoteDurationEntries equ 2
-
-BytesPerTile equ 16
+;-------,
+; Tiles ;
+;_______'
 
 tile_i set 0
 
@@ -83,6 +55,9 @@ TilesetBeginIndex equ tile_i
 tile_i set tile_i + (TilesetFrames * TilesetTilesPerFrame)
 tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
 
+Tilemap: incbin "obj/tileset.tilemap"
+TilemapEnd:
+
 Star: incbin "obj/star.2bpp"
 StarFrames equ 8
 StarTilesPerFrame equ 1
@@ -90,95 +65,11 @@ StarBeginIndex equ tile_i
 tile_i set tile_i + (StarFrames * StarTilesPerFrame)
 tile_i set tile_i + (tile_i % 2)	; align to 2 tiles for 8x16 tile support
 
-Tilemap: incbin "obj/tileset.tilemap"
-TilemapEnd:
+;-----------------------,
+; Convenience constants ;
+;_______________________'
 
-HandleNotes:
-	ld	a,[note_dur]		; if duration of previous note is expired, continue
-	cpz
-	jr	z,.next_note
-	dec	a			; otherwise decrement and return
-	ld	[note_dur],a
-	ret
-
-.next_note
-	ld	a,[note_swindex]
-	ld	hl,NoteDuration
-	add	a,l			; add index into note duration table
-	ld	l,a
-	adc	a,h
-	sub	l
-	ld	h,a
-	ld	a,[hl]			; set next note duration
-	ld	[note_dur],a
-	ld	a,[note_swindex]	; increase note swing index
-	inc	a
-	cp	NoteDurationEntries	; wrap if necessary
-	jr	c,.dont_wrap
-	ldz
-.dont_wrap
-	ld	[note_swindex],a
-	ld	a,[note_index]		; get note index
-	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
-	jr	nz,.sound_registers
-	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
-	ld	[song_repeated],a
-
-pulsenote: macro
-	; index the notes-in-song table with the note song-index to get the actual note value
-	ld	b,0
-	ld	a,[note_index]
-	ld	c,a
-	ld	hl,\1
-	add	hl,bc
-	ld	c,[hl]
-
-	ld	a,c			; if it's a rest, don't set any registers for this note
-	cp	REST
-	jr	z,.end\@
-
-	cp	KILL			; if it's a kill command, stop the note
-	jr	nz,.nocut\@
-	ldz
-	ld	[\6],a
-	ld	a,$80
-	ld	[\8],a
-	jr	.end\@
-.nocut\@
-
-	; index the note frequency table with the actual note value to get the note frequency (16-bit)
-	ld	b,0
-	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
-	rl	b
-
-	ld	hl,NoteFreqs		; now index the damn table
-	add	hl,bc
-
-	ldz				; disable sweep
-	ld	[\4],a
-	ld	a,\2			; duty cycle (top two) and length (the rest)
-	ld	[\5],a
-	ld	a,\3			; envelope, precisely like LSDj
-	ld	[\6],a
-	ld	a,[hl+]			; freq LSB
-	ld	[\7],a
-	ld	a,[hl]			; freq MSB
-	and	%00000111		; truncate to bits of MSB that are actually used
-	or	%10000000		; reset envelope (not legato)
-	ld	[\8],a			; set frequency MSB and flags
-.end\@
-	endm
-
-.sound_registers
-	pulsenote	NotesPU1,%00111111,$F1,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
-	pulsenote	NotesPU2,%10111111,$C3,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
-
-	ld	a,[note_index]	; increment index of note in song
-	inc	a
-	and	SongLength-1
-	ld	[note_index],a
-
-	ret
+BytesPerTile equ 16
 
 begin::
 	di
@@ -224,17 +115,17 @@ begin::
 
 ; write tiles from ROM into tile memory
 vram_addr set $8000
-	ld	hl,Tileset
-	ld	de,vram_addr
-	ld	bc,TilesetFrames*TilesetTilesPerFrame*BytesPerTile	; size of the ground frames together
+	ld	hl,Tileset					; source
+	ld	de,vram_addr					; destination
+	ld	bc,TilesetFrames*BytesPerTile			; number of bytes
 	call	mem_Copy
-vram_addr set vram_addr + (TilesetFrames*TilesetTilesPerFrame + (TilesetFrames % 2)) * BytesPerTile
+vram_addr set vram_addr + (TilesetFrames + (TilesetFrames % 2)) * BytesPerTile
 
-	ld	hl,Star
-	ld	de,vram_addr
-	ld	bc,StarFrames*StarTilesPerFrame*BytesPerTile	; size of all eight star frames together
+	ld	hl,Star						; source
+	ld	de,vram_addr					; destination
+	ld	bc,StarFrames*StarTilesPerFrame*BytesPerTile	; number of bytes
 	call	mem_Copy
-vram_addr set vram_addr + (StarFrames*StarTilesPerFrame + (StarFrames % 2)) * BytesPerTile
+vram_addr set vram_addr + (StarFrames * StarTilesPerFrame + (StarFrames % 2)) * BytesPerTile
 
 	; blit background
 	ld	de,_SCRN0
@@ -278,7 +169,12 @@ LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	[_OAMRAM+((\1)*4)+3],a	; flags
 	endm
 
+;-----------------,
+; Cycling sprites ;
+;_________________'
+
 spriteno set 0
+cyclesprites_begin equ spriteno
 
 StarSprite1 equ spriteno
 	LoadSprite	spriteno,StarBeginIndex,$55,$1e,0
@@ -287,6 +183,12 @@ spriteno set spriteno + 1
 StarSprite2 equ spriteno
 	LoadSprite	spriteno,StarBeginIndex + 4,$65,$1e,OAMF_XFLIP
 spriteno set spriteno + 1
+
+cyclesprites_end equ spriteno
+
+;---------------,
+; Fixed sprites ;
+;_______________'
 
 ; head
 PlayerSpriteHL equ spriteno
@@ -372,29 +274,6 @@ StopLCD:
 
 	ret
 
-; c - byte
-; hl - address
-DrawHexByte:
-	ld	d,1
-	ld	a,c
-	swap	a
-.CharLoop
-	and	$0f
-	cp	10
-	jr	nc,.Alpha
-	add	"0"
-	jr	.Write
-.Alpha
-	add	"A" - 10
-.Write
-	ld	[hli],a
-	ld	a,d
-	cpz
-	ld	a,c
-	ld	d,0
-	jr	nz,.CharLoop
-	ret
-
 ; directly from GB CPU manual
 ReadJoypad:
 	ld	a,P1F_5		; bit 5 = $20
@@ -445,11 +324,11 @@ VBlank::
 	ld	a,8			; restart animation counter
 	ld	[duration],a
 	ld	a,[buttons]
-	and	joy_up | joy_down	; moving up or down?
+	and	PADF_UP | PADF_DOWN	; moving up or down?
 	cpz
 	jr	z,.xmovement
 ;ymovement
-	and	joy_up			; moving up?
+	and	PADF_UP			; moving up?
 	cpz
 	jr	nz,.up
 ;down
@@ -466,7 +345,7 @@ VBlank::
 	jr	.scroll_screen
 .xmovement
 	ld	a,[buttons]
-	and	joy_left		; moving left?
+	and	PADF_LEFT		; moving left?
 	cpz
 	jr	nz,.left
 ;right
@@ -553,11 +432,94 @@ endr
 	ld	a,[spr_index]	; increment the sprite counter
 	inc	a
 	ld	[spr_index],a	; increment the sprite counter
-	cp	NUM_SPRITES		; repeat for each sprite
+	cp	cyclesprites_end-cyclesprites_begin	; repeat for each sprite
 	jr	nz,.cycle_sprite
 
-.end
-	call HandleNotes
+HandleNotes:
+	ld	a,[note_dur]		; if duration of previous note is expired, continue
+	cpz
+	jr	z,.next_note
+	dec	a			; otherwise decrement and return
+	ld	[note_dur],a
+	reti
+
+.next_note
+	ld	a,[note_swindex]
+	ld	hl,NoteDuration
+	add	a,l			; add index into note duration table
+	ld	l,a
+	adc	a,h
+	sub	l
+	ld	h,a
+	ld	a,[hl]			; set next note duration
+	ld	[note_dur],a
+	ld	a,[note_swindex]	; increase note swing index
+	inc	a
+	cp	NoteDurationEnd-NoteDuration	; wrap if necessary
+	jr	c,.dont_wrap
+	ldz
+.dont_wrap
+	ld	[note_swindex],a
+	ld	a,[note_index]		; get note index
+	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
+	jr	nz,.sound_registers
+	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
+	ld	[song_repeated],a
+
+pulsenote: macro
+	; index the notes-in-song table with the note song-index to get the actual note value
+	ld	b,0
+	ld	a,[note_index]
+	ld	c,a
+	ld	hl,\1
+	add	hl,bc
+	ld	c,[hl]
+
+	ld	a,c			; if it's a rest, don't set any registers for this note
+	cp	REST
+	jr	z,.end\@
+
+	cp	KILL			; if it's a kill command, stop the note
+	jr	nz,.nocut\@
+	ldz
+	ld	[\6],a
+	ld	a,$80
+	ld	[\8],a
+	jr	.end\@
+.nocut\@
+
+	; index the note frequency table with the actual note value to get the note frequency (16-bit)
+	ld	b,0
+	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
+	rl	b
+
+	ld	hl,NoteFreqs		; now index the damn table
+	add	hl,bc
+
+	ldz				; disable sweep
+	ld	[\4],a
+	ld	a,\2			; duty cycle (top two) and length (the rest)
+	ld	[\5],a
+	ld	a,\3			; envelope, precisely like LSDj
+	ld	[\6],a
+	ld	a,[hl+]			; freq LSB
+	ld	[\7],a
+	ld	a,[hl]			; freq MSB
+	and	%00000111		; truncate to bits of MSB that are actually used
+	or	%10000000		; reset envelope (not legato)
+	ld	[\8],a			; set frequency MSB and flags
+.end\@
+	endm
+
+.sound_registers
+	pulsenote	NotesPU1,%00111111,$F1,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
+	pulsenote	NotesPU2,%10111111,$C3,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
+
+	ld	a,[note_index]	; increment index of note in song
+	inc	a
+	and	SongLength-1
+	ld	[note_index],a
+
 	reti
 
 ; vim: se ft=rgbds:

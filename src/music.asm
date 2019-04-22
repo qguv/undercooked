@@ -86,4 +86,25 @@ NoteFreqs
 		e4_freq, f4_freq, fs4_freq, g4_freq, \
 		gs4_freq, a4_freq, as4_freq, b4_freq
 
+SongLength equ 32	; number of NOTES not BYTES
+NotesPU1:
+	db	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
+		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
+		fs4,d4,a3,fs3,gs4,e4,b3,gs3, \
+		a4,fs4,cs4,a3,cs4,fs4,a4,fs4
+NotesPU2:
+	db	fs3,REST,fs3,REST,e3,REST,e3,d3, \
+		KILL,REST,d3,d3,d3,d3,d3,REST, \
+		d3,REST,d3,REST,e3,REST,e3,fs3, \
+		KILL,REST,fs3,fs3,fs3,fs3,fs3,fs4
+NotesWAV:
+	db	fs3,fs3,fs3,REST,e3,e3,REST,d3, \
+		REST,REST,d3,d3,d3,d3,d3,REST, \
+		d3,d3,d3,REST,e3,e3,REST,fs3, \
+		REST,REST,fs3,fs3,fs3,fs3,fs3,fs4
+
+NoteDuration: ; in number of vblanks, this table will be cycled
+	db	9, 7
+NoteDurationEnd:
+
 ; vim: se ft=rgbds:

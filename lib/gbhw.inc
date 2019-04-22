@@ -638,7 +638,7 @@ ROM_HEADER:   MACRO
  DB $00,$08,$11,$1F,$88,$89,$00,$0E,$DC,$CC,$6E,$E6,$DD,$DD,$D9,$99
  DB $BB,$BB,$67,$63,$6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E
 
- DB "EXAMPLE",0,0,0,0,0,0,0,0 ; Cart name - 15bytes
+ DB "UNDERCOOKED",0,0,0,0 ; Cart name - 15bytes
  DB 0                         ; $143
  DB 0,0                       ; $144 - Licensee code (not important)
  DB 0                         ; $146 - SGB Support indicator
