@@ -19,6 +19,10 @@ include "src/music.asm"
 
 SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
 TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-numbered tiles (useful for 8x16 sprites)
+LEVEL_WIDTH equ 40
+LEVEL_HEIGHT equ 18
+CHARACTER_HEIGHT equ 4
+COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 
 ;---------------,
 ; Allocated RAM ;
@@ -35,6 +39,8 @@ note_index	rb 1		; index of note in song
 duration	rb 1		; how many vblank frames of the current directive are left
 dx		rb 1
 dy		rb 1
+lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
+lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
 _HIRAM_END	rb 0
 if _HIRAM_END > $FFFE
 	fail "Allocated HIRAM exceeds HIRAM space!"
@@ -49,14 +55,26 @@ _RAM_END	rb 0
 
 tile_i set 0
 
-Tileset: incbin "obj/tileset.2bpp"
-TilesetFrames equ $a1
-TilesetTilesPerFrame equ 1
-TilesetBeginIndex equ tile_i
-tile_i set tile_i + (TilesetFrames * TilesetTilesPerFrame)
+; label name, number of frames, tiles per frame
+registertiles: macro
+\1Frames equ (\2)
+\1TilesPerFrame equ (\3)
+\1BeginIndex equ tile_i
+tile_i set tile_i + \1Frames * \1TilesPerFrame
 if TWO_TILE_ALIGN
 tile_i set tile_i + (tile_i % 2)
 endc
+	endm
+
+Tileset: incbin "obj/tileset.2bpp"
+	registertiles	Tileset,$a1,1
+
+; the tile indices of all the tiles you should be able to walk on
+nonlava:
+	db	$89						; kitchen tile
+	db	$4e, $4f, $5e, $5f				; wood
+	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
+nonlava_end:
 
 Tilemap: incbin "obj/tileset.tilemap"
 TilemapEnd:
@@ -65,22 +83,10 @@ Blacktile:
 rept SCRN_TILE_B
 	db $ff
 endr
-BlacktileFrames equ 1
-BlacktileTilesPerFrame equ 1
-BlacktileBeginIndex equ tile_i
-tile_i set tile_i + (BlacktileFrames * BlacktileTilesPerFrame)
-if TWO_TILE_ALIGN
-tile_i set tile_i + (tile_i % 2)
-endc
+	registertiles Blacktile,1,1
 
 Star: incbin "obj/star.2bpp"
-StarFrames equ 8
-StarTilesPerFrame equ 1
-StarBeginIndex equ tile_i
-tile_i set tile_i + (StarFrames * StarTilesPerFrame)
-if TWO_TILE_ALIGN
-tile_i set tile_i + (tile_i % 2)
-endc
+	registertiles Star,8,1
 
 ;-------------,
 ; Entry point ;
@@ -171,15 +177,21 @@ endr
 
 	ld	h,d
 	ld	l,e
-.floor
+.surroundings
 	ld	a,BlacktileBeginIndex
 	ld	[hl+],a
 	ld	a,h
 	cp	high(_SCRN1)
-	jr	nz,.floor
+	jr	nz,.surroundings
 	ld	a,l
 	cp	low(_SCRN1)
-	jr	nz,.floor
+	jr	nz,.surroundings
+
+	; we start at 7,9 in lfoot coordinates
+	ld	a,9
+	ld	[lfootx],a
+	ld	a,7
+	ld	[lfooty],a
 
 LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
 	ld	a,16+\4			; y, first sprite top-offset by 16
@@ -330,22 +342,20 @@ endr
 VBlank::
 	ld	a,[duration]
 	cpz
-	jr nz,.scroll_screen_dur_a		; if the walk cycle isn't over, don't read buttons, just scroll
+	jp nz,.scroll_screen		; if the walk cycle isn't over, don't read buttons, just scroll
 
 ;walkcycleover
 	call ReadJoypad
 	ld	a,[buttons]
 	and	$f0			; is a movement button held?
 	jr	nz,.parsemovement	; if so, process it
-;haltmovement
+.haltmovement
 	ldz				; clear out current movement command
 	ld	[dx],a
 	ld	[dy],a
-	jr	.animate_sprites
+	jp	.animate_sprites
 
-.parsemovement
-	ld	a,8			; restart animation counter
-	ld	[duration],a
+.parsemovement				; also does bounds checks
 	ld	a,[buttons]
 	and	PADF_UP | PADF_DOWN	; moving up or down?
 	cpz
@@ -355,50 +365,131 @@ VBlank::
 	cpz
 	jr	nz,.up
 ;down
+	ld	a,[lfooty]		;if you're at the bottom edge, you can't move down
+	cp	LEVEL_HEIGHT - CHARACTER_HEIGHT - 1
+	jr	z,.haltmovement
 	ld	a,1			; move down
 	ld	[dy],a
 	ldz
 	ld	[dx],a
-	jr	.scroll_screen
+	jr	.collision
 .up
+	ld	a,[lfooty]		; if you're at the top edge, you can't move up
+	cpz
+	jr	z,.haltmovement
 	ld	a,$ff			; move up
 	ld	[dy],a
 	ldz
 	ld	[dx],a
-	jr	.scroll_screen
+	jr	.collision
 .xmovement
 	ld	a,[buttons]
 	and	PADF_LEFT		; moving left?
 	cpz
 	jr	nz,.left
 ;right
+	ld	a,[lfootx]		; if you're at the rightmost edge, you can't move right
+	cp	LEVEL_WIDTH - 2		; (subtract one to account for your RIGHT foot and one because you need to check it earlier)
+	jr	z,.haltmovement
 	ld	a,1			; move right
 	ld	[dx],a
 	ldz
 	ld	[dy],a
-	jr	.scroll_screen
+	jr	.collision
 .left
+	ld	a,[lfootx]		; if you're at the leftmost edge, you can't move left
+	cpz
+	jr	z,.haltmovement
 	ld	a,$ff			; move left
 	ld	[dx],a
 	ldz
 	ld	[dy],a
-	;jr	.scroll_screen
+	;jr	.collision
+
+.collision
+if !COLLISION_DETECTION
+	jr	.collision_end
+endc
+	; at (lfootx,lfooty) we test tilemap entry = firsttile + (40 * lfooty) + lfootx
+	; where firsttile represents the tile (with respect to the "real" tile map)
+	; that your left foot is standing on when you're at the lfoot origin
+	ld	hl,Tilemap	; Tilemap[] -> hl
+	ld	b,0		; firsttile -> bc
+	ld	c,CHARACTER_HEIGHT * LEVEL_WIDTH
+	add	hl,bc		; Tilemap[firsttile] -> hl
+	ld	a,[dx]		; dx -> c
+	ld	c,a
+	ld	a,[lfootx]	; lfootx -> a
+	add	c		; lfootx + dx -> a
+	ld	b,0		; lfootx + dx -> bc
+	ld	c,a
+	add	hl,bc		; hl = Tilemap[firsttile + lfootx + dx]
+	ld	a,[dy]		; dy -> c
+	ld	c,a
+	ld	a,[lfooty]	; lfooty -> a
+	add	c		; lfooty + dy -> a
+	ld	b,0		; 40 -> bc
+	ld	c,40
+	cpz
+	jr	.mulcheck
+.muladd
+	add	hl,bc
+	dec	a
+.mulcheck
+	jr	nz,.muladd
+;mulend				; hl = Tilemap[firsttile + (lfootx + dx) + ((lfooty + dy) * 40)]
+rept 2				; once for each foot
+	ld	a,[hl+]		; left foot tile -> e
+	ld	e,a
+	ld	d,nonlava_end-nonlava	; number of entries in nonlava table
+	ld	bc,nonlava	; nonlava[] -> bc
+.nexttile\@
+	ld	a,[bc]		; nonlava[i] -> a
+	cp	e		; if this tile is a nonlava tile, move onto the next foot
+	jp	z,.nextfoot\@
+	inc	bc		; otherwise, i++
+	dec	d
+	cpz
+	jp	nz,.nexttile\@
+	jp	.haltmovement	; if we run out of tiles without jumping to the next foot, it's lava!
+.nextfoot\@
+	endr
+.collision_end
+
+	; update lfootx and lfooty to new coordinates
+	ld	a,[dx]		; dx -> b
+	ld	b,a
+	ld	a,[lfootx]	; lfootx -> a
+	add	b		; lfootx + dx -> a
+	ld	[lfootx],a	; lfootx += dx
+	ld	a,[dy]		; dy -> b
+	ld	b,a
+	ld	a,[lfooty]	; lfooty -> a
+	add	b		; lfooty + dy -> a
+	ld	[lfooty],a	; lfooty += dy
+
+	; restart animation counter
+	ld	a,8
+	ld	[duration],a
 
 .scroll_screen
 	ld	a,[duration]
-.scroll_screen_dur_a
 	dec	a
 	ld	[duration],a
-	ld	a,[dx]			; scroll bg viewport dx tiles right
+
+	; scroll bg viewport rightward by dx
+	ld	a,[dx]		; dx -> b
 	ld	b,a
-	ld	a,[rSCX]
-	add	b
-	ld	[rSCX],a
-	ld	a,[dy]			; scroll bg viewport dy tiles left
+	ld	a,[rSCX]	; rSCX -> a
+	add	b		; rSCX + dx -> a
+	ld	[rSCX],a	; rSCX += dx
+
+	; scroll bg viewport downward by dy
+	ld	a,[dy]		; dy -> b
 	ld	b,a
-	ld	a,[rSCY]
-	add	b
-	ld	[rSCY],a
+	ld	a,[rSCY]	; rSCY -> a
+	add	b		; rSCY + dy -> a
+	ld	[rSCY],a	; rSCY += dy
 
 .animate_sprites
 	; advance animation delay
