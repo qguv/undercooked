@@ -4,25 +4,20 @@ A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later mode
 
 ## building
 
-prerequisites:
-
 1. install rgbds
-2. git submodule init && git submodule update (to get run scripts)
+2. `make`, this will produce `undercooked_xyz.gb` where `xyz` is the version
 
-building binary:
+## playing
 
-3. `make`
+- you can run on real hardware with a flash cart like the GB USB 64M
+- you can run on your regular emulator of choice, zboy is fine
+- you can run on bgb, a very good emulator with a debugger, using wine
 
-playing game
-
-4. install wine
-5. download bgb (for windows, 32- or 64-bit depending on your wine installation) and extract into `extras/bgb`
-6. `make clean play`
-
-## development
+## developing
 
 1. make some changes
 2. run `make optimcheck` to make sure you didn't miss any easily optimizable instructions
+3. run `make play` to test it with bgb, assuming you have a binary called `bgb` on your $PATH that launches bgb with wine
 
 ## naming conventions
 

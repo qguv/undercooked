@@ -1,9 +1,9 @@
 SRCDIR = src
 OBJDIR = obj
-OUTDIR = .
 SPRITEDIR = sprites
 MAPDIR = maps
 LIBDIR = lib
+ROMPATH := ./undercooked_$(shell git describe --tags).gb
 
 BGB := bgb
 
@@ -15,10 +15,14 @@ BGB := bgb
 
 VPATH = $(SRCDIR) $(LIBDIR)
 
-.PHONY: all
-all: $(OUTDIR)/main.gb
+.PHONY: build
+build: $(ROMPATH)
 
-$(OBJDIR):
+.PHONY: all
+all: build
+
+$(ROMPATH): $(OBJDIR)/main.gb
+	cp $< $@
 
 %.asm: ;
 
@@ -26,7 +30,7 @@ $(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2
 	@mkdir -p $(OBJDIR)
 	rgbasm -v -o $@ $<
 
-$(OUTDIR)/%.gb: $(OBJDIR)/%.o
+$(OBJDIR)/%.gb: $(OBJDIR)/%.o
 	rgblink -n $(OBJDIR)/$*.sym -o $@ $<
 	rgbfix -v -p 0 $@
 
@@ -48,16 +52,16 @@ $(OBJDIR)/%.1bpp: $(MAPDIR)/%.png
 
 .PHONY: play
 play: all
-	$(BGB) -nobatt $(OUTDIR)/main.gb
+	$(BGB) -nobatt $(OBJDIR)/main.gb
 
 .PHONY: debug
 debug: all
-	$(BGB) -setting StartDebug=1 -nobatt $(OUTDIR)/main.gb
+	$(BGB) -setting StartDebug=1 -nobatt $(OBJDIR)/main.gb
 
 .PHONY: clean
 clean:
 	rm -rf $(OBJDIR)
-	rm -f $(OUTDIR)/main.gb
+	rm -f $(ROMPATH)
 
 .PHONY: optimcheck
 optimcheck:
