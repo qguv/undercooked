@@ -4,8 +4,7 @@ SPRITEDIR = sprites
 MAPDIR = maps
 LIBDIR = lib
 ROMPATH := ./undercooked_$(shell git describe --tags).gb
-
-BGB := bgb
+EMULATOR := bgb -nobatt
 
 .SUFFIXES:
 .SUFFIXES: .asm .inc .o .gb .png .2bpp .1bpp
@@ -52,7 +51,7 @@ $(OBJDIR)/%.1bpp: $(MAPDIR)/%.png
 
 .PHONY: play
 play: all
-	$(BGB) -nobatt $(OBJDIR)/main.gb
+	$(EMULATOR) $(OBJDIR)/main.gb
 
 .PHONY: debug
 debug: all

@@ -17,52 +17,26 @@ include "src/music.asm"
 ; Configurable constants ;
 ;________________________'
 
-SPR_CYCLE_SPEED	equ 2		; speed of star animation, higher is exponentially slower
 TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-numbered tiles (useful for 8x16 sprites)
 LEVEL_WIDTH equ 40
 LEVEL_HEIGHT equ 18
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 
-;---------------,
-; Allocated RAM ;
-;_______________'
-
-		rsset _HIRAM
-buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
-song_repeated	rb 1		; when the song repeats for the first time, start scrolling
-spr_cycle_stall	rb 1		; delay counter between sprite tile cycling animation frames
-spr_index	rb 1		; used to loop through animating/moving sprites
-note_dur	rb 1		; counter for frames within note
-note_swindex	rb 1		; index into the swing table
-note_index	rb 1		; index of note in song
-duration	rb 1		; how many vblank frames of the current directive are left
-dx		rb 1
-dy		rb 1
-lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
-lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
-_HIRAM_END	rb 0
-if _HIRAM_END > $FFFE
-	fail "Allocated HIRAM exceeds HIRAM space!"
-endc
-
-		rsset _RAM
-_RAM_END	rb 0
-
 ;-------,
 ; Tiles ;
 ;_______'
 
-tile_i set 0
+TILE_NUM set 0
 
 ; label name, number of frames, tiles per frame
 registertiles: macro
 \1Frames equ (\2)
 \1TilesPerFrame equ (\3)
-\1BeginIndex equ tile_i
-tile_i set tile_i + \1Frames * \1TilesPerFrame
+\1BeginIndex equ TILE_NUM
+TILE_NUM set TILE_NUM + \1Frames * \1TilesPerFrame
 if TWO_TILE_ALIGN
-tile_i set tile_i + (tile_i % 2)
+TILE_NUM set TILE_NUM + (TILE_NUM % 2)
 endc
 	endm
 
@@ -87,6 +61,67 @@ endr
 
 Star: incbin "obj/star.2bpp"
 	registertiles Star,8,1
+
+;-------------------,
+; Sprite Meta-Table ;
+;___________________'
+
+include "src/smt.inc"
+
+; arguments:
+; \1: name of sprite, an index of which will be defined for you
+; \2: motion behavior: `SMTF_SCREEN_FIXED` or `SMTF_WORLD_FIXED`
+; \3: x position
+; \4: y position
+; \5: flags
+; \6: first animation frame tile index
+; \7: number of animation frames
+; \8: animation speed (in number of vblank interrupts)
+; \9: animation frame index to start on
+
+SMT_ROM:
+	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,$5d,$2e,0,StarBeginIndex,8,2,0
+	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,$6d,$2e,OAMF_XFLIP,StarBeginIndex,8,2,4
+	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$4e,$4c,0,$4a,0,0,0 ; head
+	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$56,$4c,OAMF_XFLIP,$4a,0,0,0
+	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$4e,$54,OAMF_YFLIP,$4a,0,0,0 ; head/shoulders
+	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$56,$54,OAMF_XFLIP|OAMF_YFLIP,$4a,0,0,0
+	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,0,$37,0,0,0 ; torso
+	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$56,0,$39,0,0,0
+	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,$64,0,0,0 ; core
+	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,0,$66,0,0,0
+	Sprite playerLL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,$42,0,0,0 ; legs
+	Sprite playerLR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,0,$45,0,0,0
+
+;---------------,
+; Allocated RAM ;
+;_______________'
+
+		rsset _HIRAM
+buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
+song_repeated	rb 1		; when the song repeats for the first time, start scrolling
+spr_index	rb 1		; used to loop through animating/moving sprites
+note_dur	rb 1		; counter for frames within note
+note_swindex	rb 1		; index into the swing table
+note_index	rb 1		; index of note in song
+duration	rb 1		; how many vblank frames of the current directive are left
+dx		rb 1
+dy		rb 1
+lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
+lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
+tmp1		rb 1
+tmp2		rb 1
+_HIRAM_END	rb 0
+if _HIRAM_END > $fffe
+	fail "Allocated HIRAM exceeds available HIRAM space!"
+endc
+
+		rsset _RAM
+SMT_RAM		rb SPRITE_NUM * SMT_RAM_BYTES	; sprite meta-table, holding sprite animation and movement metadata
+_RAM_END	rb 0
+if _RAM_END > $dfff
+	fail "Allocated RAM exceeds available RAM space!"
+endc
 
 ;-------------,
 ; Entry point ;
@@ -193,82 +228,32 @@ endr
 	ld	a,7
 	ld	[lfooty],a
 
-LoadSprite: macro ; args: sprite number 0-39, tile, x, y, flags
-	ld	a,16+\4			; y, first sprite top-offset by 16
-	ld	[_OAMRAM+(\1)*4],a
-	ld	a,8+\3			; x, first sprite left-offset by 8
-	ld	[_OAMRAM+((\1)*4)+1],a
-	ld	a,\2
-	ld	[_OAMRAM+((\1)*4)+2],a	; tile
-	ld	a,\5
-	ld	[_OAMRAM+((\1)*4)+3],a	; flags
-	endm
-
-;-----------------,
-; Cycling sprites ;
-;_________________'
-
-spriteno set 0
-cyclesprites_begin equ spriteno
-
-StarSprite1 equ spriteno
-	LoadSprite	spriteno,StarBeginIndex,$55,$1e,0
-spriteno set spriteno + 1
-
-StarSprite2 equ spriteno
-	LoadSprite	spriteno,StarBeginIndex + 4,$65,$1e,OAMF_XFLIP
-spriteno set spriteno + 1
-
-cyclesprites_end equ spriteno
-
-;---------------,
-; Fixed sprites ;
-;_______________'
-
-; head
-PlayerSpriteHL equ spriteno
-	LoadSprite	spriteno,$4a,$46,$3c,0
-spriteno set spriteno + 1
-
-PlayerSpriteHR equ spriteno
-	LoadSprite	spriteno,$4a,$4e,$3c,OAMF_XFLIP
-spriteno set spriteno + 1
-
-; neck
-PlayerSpriteNL equ spriteno
-	LoadSprite	spriteno,$4a,$46,$44,OAMF_YFLIP
-spriteno set spriteno + 1
-
-PlayerSpriteNR equ spriteno
-	LoadSprite	spriteno,$4a,$4e,$44,OAMF_XFLIP | OAMF_YFLIP
-spriteno set spriteno + 1
-
-; chest
-PlayerSpriteCL equ spriteno
-	LoadSprite	spriteno,$37,$48,$46,0
-spriteno set spriteno + 1
-
-PlayerSpriteCR equ spriteno
-	LoadSprite	spriteno,$39,$50,$46,0
-spriteno set spriteno + 1
-
-; butt
-PlayerSpriteBL equ spriteno
-	LoadSprite	spriteno,$64,$48,$4e,0
-spriteno set spriteno + 1
-
-PlayerSpriteBR equ spriteno
-	LoadSprite	spriteno,$66,$50,$4e,0
-spriteno set spriteno + 1
-
-; legs
-PlayerSpriteLL equ spriteno
-	LoadSprite	spriteno,$42,$48,$56,0
-spriteno set spriteno + 1
-
-PlayerSpriteLR equ spriteno
-	LoadSprite	spriteno,$45,$50,$56,0
-spriteno set spriteno + 1
+	; copy ROM SMT to RAM SMT and set OAM where needed
+	ld	a,SPRITE_NUM
+	ld	[spr_index],a
+	ld	hl,SMT_ROM
+	ld	bc,SMT_RAM
+	ld	de,_OAMRAM
+.smt_row
+rept 2				; bytes 0 (SMT flags) and 1 (animation speed/counter) go to SMT RAM
+	ld	a,[hl+]
+	ld	[bc],a
+	inc	bc
+endr
+rept 4				; bytes 2-5 (y, x, tile, flags) go to OAM RAM
+	ld	a,[hl+]
+	ld	[de],a
+	inc	de
+endr
+rept 2				; bytes 6 (overrun tile index) and 7 (initial tile index) go to SMT RAM
+	ld	a,[hl+]
+	ld	[bc],a
+	inc	bc
+endr
+	ld	a,[spr_index]
+	dec	a
+	ld	[spr_index],a
+	jr	nz,.smt_row		; ...and loop if there's more sprites to process
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
 	; turn LCD on
@@ -453,7 +438,7 @@ rept 2				; once for each foot
 	jp	nz,.nexttile\@
 	jp	.haltmovement	; if we run out of tiles without jumping to the next foot, it's lava!
 .nextfoot\@
-	endr
+endr
 .collision_end
 
 	; update lfootx and lfooty to new coordinates
@@ -492,62 +477,92 @@ rept 2				; once for each foot
 	ld	[rSCY],a	; rSCY += dy
 
 .animate_sprites
-	; advance animation delay
-	ld	a,[spr_cycle_stall]
-	inc	a
-	and	(1<<SPR_CYCLE_SPEED)-1	; truncate to just a couple LSBs
-	ld	[spr_cycle_stall],a
-
-	ld	hl,_OAMRAM	; get the first sprite
-	ldz		; reset sprite index
+	ld	a,SPRITE_NUM
 	ld	[spr_index],a
-
-.cycle_sprite
-	ld	a,[dy]	; dy -> b
-	ld	b,a
-	ld	a,[hl]	; sprite y -> a
-	sub	b	; sprite y -= dy
-	ld	[hl],a
-
-	inc	hl		; go to the tile selection byte of the sprite (2 cycles
-
-	ld	a,[dx]	; dx -> b
-	ld	b,a
-	ld	a,[hl]	; sprite x -> a
-	sub	b	; sprite x -= dx
-	ld	[hl],a
-
-	inc	hl
-
-	ld	a,[spr_cycle_stall]	; check if we're in a frame when we're supposed to cycle
-	cpz
-	jr	nz,.next
-	ld	a,[hl]		; get some sprite's tile
-	cp	StarBeginIndex + ((StarFrames - 1) * StarTilesPerFrame) ; do we need to reset?
-	jr	z,.cyclereset
-	jr	.cycleincrement
-
-.cyclereset
-	ld	a,StarBeginIndex
-	jr	.write
-
-.cycleincrement
-rept StarTilesPerFrame
-	inc	a		; advance to the next tile...
+	ld	hl,SMT_RAM
+	ld	bc,_OAMRAM
+	jr	.first_sprite
+.next_sprite
+	ld	a,[spr_index]
+	dec	a
+	jr	z,.anim_end
+	ld	[spr_index],a
+.first_sprite
+	ld	a,[hl]		; (byte 0 bit 0) check if this row is active
+	and	SMTF_ACTIVE
+	jr	z,.skip_sprite	; ...if not, skip it
+;position_update
+	ld	a,[hl]		; (byte 0 bit 1) do we need to move with the screen?
+	and	SMTF_WORLD_FIXED
+	jr	z,.no_position_update	; ...if not, don't do position updating
+	ld	a,[dy]		; dy -> d
+	ld	d,a
+	ld	a,[bc]		; OAM y pos -> a
+	sub	d		; OAM y pos - dy -> a
+	ld	[bc],a		; OAM y pos -= dy
+	inc	bc
+	ld	a,[dx]		; dx -> d
+	ld	d,a
+	ld	a,[bc]		; OAM x pos -> a
+	sub	d		; OAM x pos - dx -> a
+	ld	[bc],a		; OAM x pos -= dx
+	inc	bc
+	jr	.advance_animation
+.no_position_update
+rept 2
+	inc	bc
 endr
-	jr	.write
+	;jr	.advance_animation
+.advance_animation
+	ld	a,[hl+]		; (byte 0 bit 2) should we animate?
+	and	SMTF_ANIMATED
+	jr	z,.skip_animation
+	ld	a,[hl]		; (byte 1 low nybble) animation stall amount -> d
+	and	$0f
+	ld	d,a
+	ld	a,[hl]		; (byte 1 high nybble) animation stall counter -> a
+	swap	a
+	and	$0f
+	jr	nz,.decrease_stall	; we animate only when the counter reaches zero. if it's not zero, just decrease it this frame
+	ld	a,d		; reset the stall counter to the stall amount
+	swap	a		; combine the two nybbles
+	or	d
+	ld	[hl+],a		; stall counter and stall amount -> (byte 1)
+	ld	a,[hl+]		; (byte 2) tile-after-last -> d
+	ld	d,a
+	ld	a,[bc]		; OAM current tile -> a
+	inc	a		; current tile + 1 -> a
+	cp	d		; if current tile + 1 == tile-after-last...
+	jp	nz,.no_reset_animation
+	ld	a,[hl]		; (byte 3) first animation frame tile index -> a
+.no_reset_animation		; (assuming hl is at byte 3 of the RAM SMT entry)
+	ld	[bc],a		; new tile index -> OAM current tile
+	jr	.after_animation
+.decrease_stall
+	dec	a		; decrease the animation stall counter
+	swap	a		; combine the two nybbles
+	or	d
+	ld	[hl+],a		; write back to the RAM SMT
+	jr	.after_decrease_stall
 
-.write
-	ld	[hl],a		; advance sprite to its next tile
-.next
-	inc	hl		; go to the next sprite in OAMRAM...
+; skipping through the remainder of the row. different entry points for different points to skip from
+.skip_sprite
 	inc	hl
-.next_noadvance
-	ld	a,[spr_index]	; increment the sprite counter
-	inc	a
-	ld	[spr_index],a	; increment the sprite counter
-	cp	cyclesprites_end-cyclesprites_begin	; repeat for each sprite
-	jr	nz,.cycle_sprite
+rept 2
+	inc	bc
+endr
+.skip_animation
+	inc	hl
+.after_decrease_stall
+	inc	hl
+.after_animation
+	inc	hl
+rept 2
+	inc	bc
+endr
+	jr	.next_sprite
+
+.anim_end
 
 HandleNotes:
 	ld	a,[note_dur]		; if duration of previous note is expired, continue

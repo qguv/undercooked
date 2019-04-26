@@ -31,12 +31,12 @@ addresses:
 
 ```asm
 .jump_label                 ; jump labels within subroutines
-;convenience_label          ; begin paragraph that's fallen through to
+;convenience_label          ; label for a section of code that's currently entered by fallthrough
 .label_in_macro\@           ; jump labels within macros
 SomeFunction:               ; a non-exported function
 SomeData                    ; exported data, probably array/string
 _GBHW_ADDR or _GBHWADDR     ; gameboy hardware address defined in gbhw.inc
-some_value                  ; address in hram
+some_value                  ; ram address or compiler variable
 ```
 
 values:
