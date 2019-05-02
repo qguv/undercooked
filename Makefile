@@ -23,7 +23,7 @@ $(ROMPATH): $(OBJDIR)/main.gb
 
 %.asm: ;
 
-$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp
+$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp fix $(OBJDIR)/sadcat.2bpp
 	@mkdir -p $(OBJDIR)
 	rgbasm -v -E -o $@ $<
 
@@ -51,6 +51,10 @@ $(OBJDIR)/%.2bpp: $(OBJDIR)/%.png
 $(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
+
+.PHONY: fix
+fix: $(OBJDIR)/sadcat.png
+	mogrify -sample 16 +negate -fuzz 2% -fill "#a8a8a8" -opaque white $<
 
 .PHONY: play
 play: all

@@ -19,10 +19,10 @@ SPRITE_NUM set 0
 ; arguments:
 ; \1: name of sprite, an index of which will be defined for you
 ; \2: motion behavior: `SMTF_SCREEN_FIXED` or `SMTF_WORLD_FIXED`
-; \3: x position
-; \4: y position
-; \5: flags
-; \6: first animation frame tile index
+; \3: first animation frame tile index
+; \4: x position
+; \5: y position
+; \6: flags
 ; \7: number of animation frames
 ; \8: animation speed (in number of vblank interrupts)
 ; \9: animation frame index to start on
@@ -40,12 +40,12 @@ if (\8) > $0f
 endc
 	db	(\8) | ((\8) << 4)	; (byte 1 low nybble) animation speed in number of vblanks to skip
 				; (byte 1 high nybble) number of vblanks left to stall
-	db	(\4)		; (byte 2, ROM only) y
-	db	(\3)		; (byte 3, ROM only) x
-	db	(\9)+(\6)	; (byte 4, ROM only) current/initial tile
-	db	(\5)		; (byte 5, ROM only) flags
-	db	(\7)+(\6)	; (byte 6) tile index of the frame after the last animation frame
-	db	(\6)		; (byte 7) first animation frame tile index
+	db	(\5)		; (byte 2, ROM only) y
+	db	(\4)		; (byte 3, ROM only) x
+	db	(\9)+(\3)	; (byte 4, ROM only) current/initial tile
+	db	(\6)		; (byte 5, ROM only) flags
+	db	(\7)+(\3)	; (byte 6) tile index of the frame after the last animation frame
+	db	(\3)		; (byte 7) first animation frame tile index
 	endm
 
 SMT_RAM_BYTES equ 4

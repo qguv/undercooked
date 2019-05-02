@@ -62,6 +62,9 @@ endr
 Star: incbin "obj/star.2bpp"
 	registertiles Star,8,1
 
+Sadcat: incbin "obj/sadcat.2bpp"
+	registertiles Sadcat,8,8
+
 ;-------------------,
 ; Sprite Meta-Table ;
 ;___________________'
@@ -71,27 +74,25 @@ include "src/smt.inc"
 ; arguments:
 ; \1: name of sprite, an index of which will be defined for you
 ; \2: motion behavior: `SMTF_SCREEN_FIXED` or `SMTF_WORLD_FIXED`
-; \3: x position
-; \4: y position
-; \5: flags
-; \6: first animation frame tile index
+; \3: first animation frame tile index
+; \4: x position
+; \5: y position
+; \6: flags
 ; \7: number of animation frames
 ; \8: animation speed (in number of vblank interrupts)
 ; \9: animation frame index to start on
 
 SMT_ROM:
-	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,$5d,$2e,0,StarBeginIndex,8,2,0
-	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,$6d,$2e,OAMF_XFLIP,StarBeginIndex,8,2,4
-	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$4e,$4c,0,$4a,0,0,0 ; head
-	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$56,$4c,OAMF_XFLIP,$4a,0,0,0
-	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$4e,$54,OAMF_YFLIP,$4a,0,0,0 ; head/shoulders
-	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$56,$54,OAMF_XFLIP|OAMF_YFLIP,$4a,0,0,0
-	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,0,$37,0,0,0 ; torso
-	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$56,0,$39,0,0,0
-	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,$64,0,0,0 ; core
-	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,0,$66,0,0,0
-	Sprite playerLL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,$42,0,0,0 ; legs
-	Sprite playerLR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,0,$45,0,0,0
+	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$5d,$2e,0,8,2,0
+	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$6d,$2e,OAMF_XFLIP,8,2,4
+	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+0,$50,$4e,OAMF_PAL1,0,0,0 ; head
+	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+1,$58,$4e,OAMF_PAL1,0,0,0
+	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$50,$56,OAMF_PAL1,0,0,0 ; head/shoulders
+	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$58,$56,OAMF_XFLIP|OAMF_PAL1,0,0,0
+	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+4,$50,$5e,OAMF_PAL1,0,0,0 ; torso
+	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+5,$58,$5e,OAMF_PAL1,0,0,0
+	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+6,$50,$66,OAMF_PAL1,0,0,0 ; core
+	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+7,$58,$66,OAMF_PAL1,0,0,0
 
 ;---------------,
 ; Allocated RAM ;
@@ -137,6 +138,8 @@ begin::
 	ld	a,%11100100
 	;                ^^ not used, always transparent
 	ldh	[rOBP0],a	; set sprite pallette 0
+	ld	a,%00011100
+	;                ^^ not used, always transparent
 	ldh	[rOBP1],a	; set sprite pallette 1
 
 	; clear screen RAM
@@ -187,6 +190,7 @@ vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	LoadTiles Tileset,TilesetFrames,TilesetTilesPerFrame
 	LoadTiles Blacktile,BlacktileFrames,BlacktileTilesPerFrame
 	LoadTiles Star,StarFrames,StarTilesPerFrame
+	LoadTiles Sadcat,SadcatFrames,SadcatTilesPerFrame
 
 	; blit tilemap
 if TilesetBeginIndex != 0
