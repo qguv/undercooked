@@ -2,6 +2,12 @@
 
 A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too.
 
+## credits
+
+<img width=80 src="https://retchdots.carrd.co/assets/images/image02.jpg?v81760597676551" /> [Rachel](https://retchdots.carrd.co/) did the amazing pixel art
+
+[Quint](https://github.com/qguv) wrote the code and music
+
 ## building
 
 1. install rgbds
