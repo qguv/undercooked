@@ -3,7 +3,7 @@ OBJDIR = obj
 SPRITEDIR = sprites
 MAPDIR = maps
 LIBDIR = lib
-ROMPATH := ./undercooked_$(shell git describe --tags).gb
+ROMPATH := ./undercooked_$(shell git describe --tags --dirty).gb
 EMULATOR := bgb -nobatt
 
 .SUFFIXES:
