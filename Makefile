@@ -3,14 +3,12 @@ OBJDIR = obj
 SPRITEDIR = sprites
 MAPDIR = maps
 LIBDIR = lib
+WORKDIR := tmp_$(shell date +%s)
 ROMPATH := ./undercooked_$(shell git describe --tags --dirty).gb
 EMULATOR := bgb -nobatt
 
 .SUFFIXES:
-.SUFFIXES: .asm .inc .o .gb .png .2bpp .1bpp
-.SECONDEXPANSION:
-# Suppress annoying intermediate file deletion messages.
-.PRECIOUS: %.2bpp
+.PRECIOUS: $(OBJDIR)/%.png $(OBJDIR)/%.o
 
 VPATH = $(SRCDIR) $(LIBDIR)
 
@@ -25,7 +23,7 @@ $(ROMPATH): $(OBJDIR)/main.gb
 
 %.asm: ;
 
-$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp
+$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp
 	@mkdir -p $(OBJDIR)
 	rgbasm -v -E -o $@ $<
 
@@ -37,15 +35,20 @@ $(OBJDIR)/%.2bpp: $(SPRITEDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -o $@ $<
 
-$(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
+# turn gif frames into a tall png of appended frames
+$(OBJDIR)/%.png: $(SPRITEDIR)/%.gif
 	@mkdir -p $(OBJDIR)
-	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
+	@mkdir -p $(WORKDIR)/$(SPRITEDIR)
+	convert -coalesce $< $(WORKDIR)/$*-%04d.png
+	convert $(WORKDIR)/$*-*.png -append $@
+	rm -rf $(WORKDIR)
 
-$(OBJDIR)/%.1bpp: $(SPRITEDIR)/%.png
-	@mkdir -p $(OBJDIR)
+# turn a tall png representing an animation into 2bpp
+$(OBJDIR)/%.2bpp: $(OBJDIR)/%.png
 	rgbgfx -o $@ $<
 
-$(OBJDIR)/%.1bpp: $(MAPDIR)/%.png
+# turn a map into a bunch of tiles and a tilemap of tile indexes
+$(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
 	@mkdir -p $(OBJDIR)
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
 
