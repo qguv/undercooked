@@ -27,7 +27,7 @@ $(ROMPATH): $(OBJDIR)/main.gb
 
 $(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp
 	@mkdir -p $(OBJDIR)
-	rgbasm -v -o $@ $<
+	rgbasm -v -E -o $@ $<
 
 $(OBJDIR)/%.gb: $(OBJDIR)/%.o
 	rgblink -n $(OBJDIR)/$*.sym -o $@ $<
