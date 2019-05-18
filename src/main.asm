@@ -85,14 +85,14 @@ include "src/smt.inc"
 SMT_ROM:
 	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$5d,$2e,0,8,2,0
 	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$6d,$2e,OAMF_XFLIP,8,2,4
-	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+0,$50,$4e,OAMF_PAL1,0,0,0 ; head
-	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+1,$58,$4e,OAMF_PAL1,0,0,0
-	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$50,$56,OAMF_PAL1,0,0,0 ; head/shoulders
-	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$58,$56,OAMF_XFLIP|OAMF_PAL1,0,0,0
-	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+4,$50,$5e,OAMF_PAL1,0,0,0 ; torso
-	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+5,$58,$5e,OAMF_PAL1,0,0,0
-	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+6,$50,$66,OAMF_PAL1,0,0,0 ; core
-	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+7,$58,$66,OAMF_PAL1,0,0,0
+	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+0,$50,$4e,0,0,0,0 ; head
+	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+1,$58,$4e,0,0,0,0
+	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$50,$56,0,0,0,0 ; head/shoulders
+	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+3,$58,$56,0,0,0,0
+	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+4,$50,$5e,0,0,0,0 ; torso
+	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+5,$58,$5e,0,0,0,0
+	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+6,$50,$66,0,0,0,0 ; core
+	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+7,$58,$66,0,0,0,0
 
 ;---------------,
 ; Allocated RAM ;
@@ -135,10 +135,10 @@ begin::
 
 	ld	a,%11100100	; Window palette colors, from darkest to lightest
 	ld	[rBGP],a	; Setup the default background palette
-	ld	a,%11100100
+	ld	a,%11100000
 	;                ^^ not used, always transparent
 	ldh	[rOBP0],a	; set sprite pallette 0
-	ld	a,%00011100
+	ld	a,%11010000
 	;                ^^ not used, always transparent
 	ldh	[rOBP1],a	; set sprite pallette 1
 
