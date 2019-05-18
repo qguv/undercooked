@@ -78,8 +78,8 @@ $(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
 
 .PHONY: play
-play: build
-	$(EMULATOR) $(OBJDIR)/main.gb
+play: $(OBJDIR)/main.gb
+	$(EMULATOR) $<
 
 .PHONY: debug
 debug: build
@@ -88,7 +88,6 @@ debug: build
 .PHONY: clean
 clean:
 	rm -rf $(OBJDIR)
-	rm -f $(ROMPATH)
 
 .PHONY: optimcheck
 optimcheck:
