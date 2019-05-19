@@ -32,9 +32,8 @@ TILE_NUM set 0
 ; label name, number of frames, tiles per frame
 registertiles: macro
 \1Frames equ (\2)
-\1TilesPerFrame equ (\3)
 \1BeginIndex equ TILE_NUM
-TILE_NUM set TILE_NUM + \1Frames * \1TilesPerFrame
+TILE_NUM set TILE_NUM + \1Frames
 if TWO_TILE_ALIGN
 TILE_NUM set TILE_NUM + (TILE_NUM % 2)
 endc
@@ -57,13 +56,13 @@ Blacktile:
 rept SCRN_TILE_B
 	db $ff
 endr
-	registertiles Blacktile,1,1
+	registertiles Blacktile,1
 
 Star: incbin "obj/star.2bpp"
-	registertiles Star,8,1
+	registertiles Star,8
 
-Sadcat: incbin "obj/sadcat.2bpp"
-	registertiles Sadcat,8,8
+Southward: incbin "obj/southward.2bpp"
+	registertiles Southward,8
 
 ;-------------------,
 ; Sprite Meta-Table ;
@@ -85,14 +84,16 @@ include "src/smt.inc"
 SMT_ROM:
 	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$5d,$2e,0,8,2,0
 	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$6d,$2e,OAMF_XFLIP,8,2,4
-	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+0,$50,$4e,0,0,0,0 ; head
-	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+1,$58,$4e,0,0,0,0
-	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+2,$50,$56,0,0,0,0 ; head/shoulders
-	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+3,$58,$56,0,0,0,0
-	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+4,$50,$5e,0,0,0,0 ; torso
-	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+5,$58,$5e,0,0,0,0
-	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+6,$50,$66,0,0,0,0 ; core
-	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SadcatBeginIndex+7,$58,$66,0,0,0,0
+
+	; cat facing southward
+	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$50,$4e,0,0,0,0 ; top of head
+	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$58,$4e,OAMF_XFLIP,0,0,0
+	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$50,$56,0,0,0,0 ; bottom of head
+	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$58,$56,OAMF_XFLIP,0,0,0
+	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+2,$50,$5e,0,0,0,0 ; top of torso
+	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+2,$58,$5e,OAMF_XFLIP,0,0,0
+	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+3,$50,$66,0,0,0,0 ; bottom of torso
+	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+3,$58,$66,OAMF_XFLIP,0,0,0
 
 ;---------------,
 ; Allocated RAM ;
@@ -112,6 +113,14 @@ lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you 
 lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
 tmp1		rb 1
 tmp2		rb 1
+
+; character look direction: SOUTHWARD, WESTWARD, NORTHWARD, EASTWARD
+direction	rb 1
+SOUTHWARD	equ 0
+WESTWARD	equ 1
+NORTHWARD	equ 2
+EASTWARD	equ 3
+
 _HIRAM_END	rb 0
 if _HIRAM_END > $fffe
 	fail "Allocated HIRAM exceeds available HIRAM space!"
@@ -177,7 +186,7 @@ vram_addr set $8000
 LoadTiles: macro
 	ld	hl,\1
 	ld	de,vram_addr
-size	set	(\2) * (\3) * SCRN_TILE_B
+size	set	(\2) * SCRN_TILE_B
 	ld	bc,size
 	call	mem_Copy
 vram_addr set vram_addr+size
@@ -187,10 +196,10 @@ vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	endm
 
 	; write tiles from ROM into tile memory
-	LoadTiles Tileset,TilesetFrames,TilesetTilesPerFrame
-	LoadTiles Blacktile,BlacktileFrames,BlacktileTilesPerFrame
-	LoadTiles Star,StarFrames,StarTilesPerFrame
-	LoadTiles Sadcat,SadcatFrames,SadcatTilesPerFrame
+	LoadTiles Tileset,TilesetFrames
+	LoadTiles Blacktile,BlacktileFrames
+	LoadTiles Star,StarFrames
+	LoadTiles Southward,SouthwardFrames
 
 	; blit tilemap
 if TilesetBeginIndex != 0
@@ -354,6 +363,8 @@ VBlank::
 	cpz
 	jr	nz,.up
 ;down
+	ld	a,SOUTHWARD		; turn
+	ld	[direction],a
 	ld	a,[lfooty]		;if you're at the bottom edge, you can't move down
 	cp	LEVEL_HEIGHT - CHARACTER_HEIGHT - 1
 	jr	z,.haltmovement
@@ -363,6 +374,8 @@ VBlank::
 	ld	[dx],a
 	jr	.collision
 .up
+	ld	a,NORTHWARD		; turn
+	ld	[direction],a
 	ld	a,[lfooty]		; if you're at the top edge, you can't move up
 	cpz
 	jr	z,.haltmovement
@@ -377,6 +390,8 @@ VBlank::
 	cpz
 	jr	nz,.left
 ;right
+	ld	a,EASTWARD		; turn
+	ld	[direction],a
 	ld	a,[lfootx]		; if you're at the rightmost edge, you can't move right
 	cp	LEVEL_WIDTH - 2		; (subtract one to account for your RIGHT foot and one because you need to check it earlier)
 	jr	z,.haltmovement
@@ -386,6 +401,8 @@ VBlank::
 	ld	[dy],a
 	jr	.collision
 .left
+	ld	a,WESTWARD		; turn
+	ld	[direction],a
 	ld	a,[lfootx]		; if you're at the leftmost edge, you can't move left
 	cpz
 	jr	z,.haltmovement

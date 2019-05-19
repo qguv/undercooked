@@ -1,10 +1,10 @@
 SRCDIR = src
 OBJDIR = obj
-SPRITEDIR = sprites
-MAPDIR = maps
+SPRITEDIR = art
+RELEASESDIR = releases
 LIBDIR = lib
 WORKDIR := tmp_$(shell date +%s)
-ROMPATH := ./undercooked_$(shell git describe --tags --dirty).gb
+ROMPATH := $(RELEASESDIR)/undercooked_$(shell git describe --tags --dirty).gb
 EMULATOR := bgb -nobatt
 
 # disable suffix rule interpretation
@@ -15,13 +15,11 @@ EMULATOR := bgb -nobatt
 
 VPATH = $(SRCDIR) $(LIBDIR)
 
-.PHONY: build
-build: $(ROMPATH)
-
 $(ROMPATH): $(OBJDIR)/main.gb
+	@mkdir -p $(RELEASESDIR)
 	cp $< $@
 
-$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/table.2bpp $(OBJDIR)/ground.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp $(OBJDIR)/sadcat.2bpp
+$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp $(OBJDIR)/southward.2bpp
 	@printf "\nassembling $<...\n"
 	@mkdir -p $(OBJDIR)
 	rgbasm -v -E -o $@ $<
@@ -72,7 +70,13 @@ $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif
 	rm -rf $(WORKDIR)
 
 # turn a map into a bunch of tiles and a tilemap of tile indexes
-$(OBJDIR)/%.2bpp: $(MAPDIR)/%.png
+$(OBJDIR)/%.2bpp: $(SPRITEDIR)/%_tiles.png
+	@printf "\ncreating tiles and tilemap from $<\n"
+	@mkdir -p $(OBJDIR)
+	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
+
+# turn an intermediate file into a bunch of tiles and a tilemap of tile indexes
+$(OBJDIR)/%.2bpp: $(OBJDIR)/%_tiles.png
 	@printf "\ncreating tiles and tilemap from $<\n"
 	@mkdir -p $(OBJDIR)
 	rgbgfx -ut $(OBJDIR)/$*.tilemap -o $@ $<
