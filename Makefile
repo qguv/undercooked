@@ -19,7 +19,7 @@ $(ROMPATH): $(OBJDIR)/main.gb
 	@mkdir -p $(RELEASESDIR)
 	cp $< $@
 
-$(OBJDIR)/%.o: %.asm $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/overcooked.2bpp $(OBJDIR)/southward.2bpp
+$(OBJDIR)/%.o: %.asm $(SRCDIR)/smt.inc $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/southward.2bpp
 	@printf "\nassembling $<...\n"
 	@mkdir -p $(OBJDIR)
 	rgbasm -v -E -o $@ $<

@@ -81,19 +81,28 @@ include "src/smt.inc"
 ; \8: animation speed (in number of vblank interrupts)
 ; \9: animation frame index to start on
 
+StarAnimTab:
+	db 0,1,2,3,4,5,6,7
+
+SouthwardArmAnimTab:
+	db 2,4,2,6
+
+SouthwardLegAnimTab:
+	db 3,5,3,7
+
 SMT_ROM:
-	Sprite lstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$5d,$2e,0,8,2,0
-	Sprite rstar_sprite,SMTF_ACTIVE|SMTF_ANIMATED|SMTF_WORLD_FIXED,StarBeginIndex,$6d,$2e,OAMF_XFLIP,8,2,4
+	AnimSprite lstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$5d,$2e,0,8,2,0,StarAnimTab
+	AnimSprite rstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$6d,$2e,OAMF_XFLIP,8,2,4,StarAnimTab
 
 	; cat facing southward
-	Sprite playerHL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$50,$4e,0,0,0,0 ; top of head
-	Sprite playerHR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$58,$4e,OAMF_XFLIP,0,0,0
-	Sprite playerSL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$50,$56,0,0,0,0 ; bottom of head
-	Sprite playerSR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$58,$56,OAMF_XFLIP,0,0,0
-	Sprite playerTL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+2,$50,$5e,0,0,0,0 ; top of torso
-	Sprite playerTR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+2,$58,$5e,OAMF_XFLIP,0,0,0
-	Sprite playerCL_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+3,$50,$66,0,0,0,0 ; bottom of torso
-	Sprite playerCR_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+3,$58,$66,OAMF_XFLIP,0,0,0
+	StaticSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$50,$4e,0
+	StaticSprite neckl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$50,$56,0
+	StaticSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$58,$4e,OAMF_XFLIP
+	StaticSprite neckr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$58,$56,OAMF_XFLIP
+	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,4,0,SouthwardArmAnimTab
+	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,4,0,SouthwardLegAnimTab
+	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,OAMF_XFLIP,4,4,2,SouthwardArmAnimTab
+	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,OAMF_XFLIP,4,4,2,SouthwardLegAnimTab
 
 ;---------------,
 ; Allocated RAM ;
@@ -248,20 +257,15 @@ endr
 	ld	bc,SMT_RAM
 	ld	de,_OAMRAM
 .smt_row
-rept 2				; bytes 0 (SMT flags) and 1 (animation speed/counter) go to SMT RAM
+rept 6				; bytes 0-5 go to SMT RAM
 	ld	a,[hl+]
 	ld	[bc],a
 	inc	bc
 endr
-rept 4				; bytes 2-5 (y, x, tile, flags) go to OAM RAM
+rept 4				; bytes 6-10 go to OAM RAM
 	ld	a,[hl+]
 	ld	[de],a
 	inc	de
-endr
-rept 2				; bytes 6 (overrun tile index) and 7 (initial tile index) go to SMT RAM
-	ld	a,[hl+]
-	ld	[bc],a
-	inc	bc
 endr
 	ld	a,[spr_index]
 	dec	a
@@ -511,7 +515,7 @@ endr
 .first_sprite
 	ld	a,[hl]		; (byte 0 bit 0) check if this row is active
 	and	SMTF_ACTIVE
-	jr	z,.skip_sprite	; ...if not, skip it
+	jr	z,.next_inactive	; ...if not, skip it
 ;position_update
 	ld	a,[hl]		; (byte 0 bit 1) do we need to move with the screen?
 	and	SMTF_WORLD_FIXED
@@ -537,7 +541,7 @@ endr
 .advance_animation
 	ld	a,[hl+]		; (byte 0 bit 2) should we animate?
 	and	SMTF_ANIMATED
-	jr	z,.skip_animation
+	jr	z,.next_noanim
 	ld	a,[hl]		; (byte 1 low nybble) animation stall amount -> d
 	and	$0f
 	ld	d,a
@@ -549,39 +553,45 @@ endr
 	swap	a		; combine the two nybbles
 	or	d
 	ld	[hl+],a		; stall counter and stall amount -> (byte 1)
-	ld	a,[hl+]		; (byte 2) tile-after-last -> d
+	ld	a,[hl+]		; (byte 2) anim table length -> d
 	ld	d,a
-	ld	a,[bc]		; OAM current tile -> a
-	inc	a		; current tile + 1 -> a
-	cp	d		; if current tile + 1 == tile-after-last...
+	ld	a,[hl+]		; (byte 3) current anim table index -> a
+	inc	a		; a++
+	cp	d		; if current tile + 1 == length...
 	jp	nz,.no_reset_animation
-	ld	a,[hl]		; (byte 3) first animation frame tile index -> a
-.no_reset_animation		; (assuming hl is at byte 3 of the RAM SMT entry)
-	ld	[bc],a		; new tile index -> OAM current tile
+	ldz			; ...reset current tile to zero
+.no_reset_animation
+	ld	a,[hl+]		; (byte 4-5) animation table address -> de
+	ld	e,a
+	ld	a,[hl+]
+	ld	d,a
+	adddea			; index into animation table
+	ld	a,[de]		; new tile index -> OAM current tile
+	ld	[bc],a
 	jr	.after_animation
+
 .decrease_stall
 	dec	a		; decrease the animation stall counter
 	swap	a		; combine the two nybbles
 	or	d
 	ld	[hl+],a		; write back to the RAM SMT
-	jr	.after_decrease_stall
+	jr	.next_stalled
 
-; skipping through the remainder of the row. different entry points for different points to skip from
-.skip_sprite
-	inc	hl
+.next_inactive
 rept 2
-	inc	bc
+	inc bc
 endr
-.skip_animation
+	inc hl
+.next_noanim
+	inc hl
+.next_stalled
+rept SMT_RAM_BYTES - 2
 	inc	hl
-.after_decrease_stall
-	inc	hl
+endr
+	inc bc
 .after_animation
-	inc	hl
-rept 2
-	inc	bc
-endr
-	jr	.next_sprite
+	inc bc
+	jr .next_sprite
 
 .anim_end
 
@@ -596,11 +606,7 @@ HandleNotes:
 .next_note
 	ld	a,[note_swindex]
 	ld	hl,NoteDuration
-	add	a,l			; add index into note duration table
-	ld	l,a
-	adc	a,h
-	sub	l
-	ld	h,a
+	addhla				; add index into note duration table
 	ld	a,[hl]			; set next note duration
 	ld	[note_dur],a
 	ld	a,[note_swindex]	; increase note swing index

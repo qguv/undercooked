@@ -10,4 +10,31 @@ ldz: macro
 	xor	a
 	endm
 
+; 'addhla' adds a to hl, 20 cycles
+addhla: macro
+	add	a,l
+	ld	l,a
+	adc	a,h
+	sub	l
+	ld	h,a
+	endm
+
+; 'addbca' adds a to bc, 20 cycles
+addbca: macro
+	add	a,c
+	ld	c,a
+	adc	a,b
+	sub	c
+	ld	b,a
+	endm
+
+; 'adddea' adds a to de, 20 cycles
+adddea: macro
+	add	a,e
+	ld	e,a
+	adc	a,d
+	sub	e
+	ld	d,a
+	endm
+
 ; vim: se ft=rgbds:
