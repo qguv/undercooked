@@ -70,25 +70,27 @@ Southward: incbin "obj/southward.2bpp"
 
 include "src/smt.inc"
 
-; arguments:
-; \1: name of sprite, an index of which will be defined for you
-; \2: motion behavior: `SMTF_SCREEN_FIXED` or `SMTF_WORLD_FIXED`
-; \3: first animation frame tile index
-; \4: x position
-; \5: y position
-; \6: flags
-; \7: number of animation frames
-; \8: animation speed (in number of vblank interrupts)
-; \9: animation frame index to start on
-
 StarAnimTab:
-	db 0,1,2,3,4,5,6,7
+	db StarBeginIndex+0
+	db StarBeginIndex+1
+	db StarBeginIndex+2
+	db StarBeginIndex+3
+	db StarBeginIndex+4
+	db StarBeginIndex+5
+	db StarBeginIndex+6
+	db StarBeginIndex+7
 
 SouthwardArmAnimTab:
-	db 2,4,2,6
+	db SouthwardBeginIndex+2
+	db SouthwardBeginIndex+4
+	db SouthwardBeginIndex+2
+	db SouthwardBeginIndex+6
 
 SouthwardLegAnimTab:
-	db 3,5,3,7
+	db SouthwardBeginIndex+3
+	db SouthwardBeginIndex+5
+	db SouthwardBeginIndex+3
+	db SouthwardBeginIndex+7
 
 SMT_ROM:
 	AnimSprite lstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$5d,$2e,0,8,2,0,StarAnimTab
@@ -99,10 +101,10 @@ SMT_ROM:
 	StaticSprite neckl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$50,$56,0
 	StaticSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$58,$4e,OAMF_XFLIP
 	StaticSprite neckr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$58,$56,OAMF_XFLIP
-	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,4,0,SouthwardArmAnimTab
-	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,4,0,SouthwardLegAnimTab
-	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,OAMF_XFLIP,4,4,2,SouthwardArmAnimTab
-	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,OAMF_XFLIP,4,4,2,SouthwardLegAnimTab
+	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,8,0,SouthwardArmAnimTab
+	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,8,0,SouthwardLegAnimTab
+	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,OAMF_XFLIP,4,8,2,SouthwardArmAnimTab
+	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,OAMF_XFLIP,4,8,2,SouthwardLegAnimTab
 
 ;---------------,
 ; Allocated RAM ;
@@ -223,8 +225,8 @@ rept $20
 	ld	[de],a
 	inc	de
 endr
-	ld	bc,8		; add 8 to tilemap addr
-	add	hl,bc
+	ld	a,8
+	addhla
 	ld	a,h		; check if we're at the end
 	cp	high(TilemapEnd)
 	jr	nz,.loop
@@ -262,7 +264,7 @@ rept 6				; bytes 0-5 go to SMT RAM
 	ld	[bc],a
 	inc	bc
 endr
-rept 4				; bytes 6-10 go to OAM RAM
+rept 4				; bytes 6-9 go to OAM RAM
 	ld	a,[hl+]
 	ld	[de],a
 	inc	de
@@ -555,17 +557,20 @@ endr
 	ld	[hl+],a		; stall counter and stall amount -> (byte 1)
 	ld	a,[hl+]		; (byte 2) anim table length -> d
 	ld	d,a
-	ld	a,[hl+]		; (byte 3) current anim table index -> a
+	ld	a,[hl]		; (byte 3) current anim table index -> a
 	inc	a		; a++
 	cp	d		; if current tile + 1 == length...
 	jp	nz,.no_reset_animation
 	ldz			; ...reset current tile to zero
 .no_reset_animation
+	ld	[hl+],a		; (byte 3) a -> current anim table index, -> tmp1
+	ld	[tmp1],a
 	ld	a,[hl+]		; (byte 4-5) animation table address -> de
 	ld	e,a
 	ld	a,[hl+]
 	ld	d,a
-	adddea			; index into animation table
+	ld	a,[tmp1]	; index into animation table
+	adddea
 	ld	a,[de]		; new tile index -> OAM current tile
 	ld	[bc],a
 	jr	.after_animation
@@ -588,8 +593,8 @@ endr
 rept SMT_RAM_BYTES - 2
 	inc	hl
 endr
-	inc bc
 .after_animation
+	inc bc
 	inc bc
 	jr .next_sprite
 
