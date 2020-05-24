@@ -22,6 +22,7 @@ LEVEL_WIDTH equ 40
 LEVEL_HEIGHT equ 18
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
+TILE_INIT_WIDTH equ 21
 
 ;-------,
 ; Tiles ;
@@ -48,6 +49,8 @@ nonlava:
 	db	$4e, $4f, $5e, $5f				; wood
 	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
 nonlava_end:
+
+WORLD_WIDTH equ 40
 
 Tilemap: incbin "obj/tileset.tilemap"
 TilemapEnd:
@@ -118,10 +121,13 @@ note_dur	rb 1		; counter for frames within note
 note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
 duration	rb 1		; how many vblank frames of the current directive are left
+win_ltile	rb 1		; one tile left of the leftmost loaded tile
+win_rtile	rb 1		; the rightmost loaded tile
 dx		rb 1
 dy		rb 1
 lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
 lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
+
 tmp1		rb 1
 tmp2		rb 1
 
@@ -220,7 +226,7 @@ endc
 	ld	hl,Tilemap
 .loop
 	nop
-rept $20
+rept TILE_INIT_WIDTH
 	ld	a,[hl+]
 	ld	[de],a
 	inc	de
@@ -245,6 +251,13 @@ endr
 	ld	a,l
 	cp	low(_SCRN1)
 	jr	nz,.surroundings
+
+	; the width index of the leftmost tile in VRAM
+	ldz
+	ld	[win_ltile],a
+	; one plus the width index of the rightmost tile in VRAM
+	ld	a,TILE_INIT_WIDTH
+	ld	[win_rtile],a
 
 	; we start at 7,9 in lfoot coordinates
 	ld	a,9
@@ -342,6 +355,37 @@ endr
 	ld	A,P1F_5|P1F_4	; deselect P14 and P15
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
+
+LoadTilesR:
+	; if the tile is off the edge of the world, load a line of blank tiles
+	ld	a,[win_rtile]
+	cp	WORLD_WIDTH
+	call	c,LoadRealTilesR
+	call	LoadBlankTilesR
+
+	; win_rtile++
+	ld	a,[win_rtile]
+	inc	a
+	ld	[win_rtile],a
+
+	ret
+
+LoadBlankTilesR:
+	ld	hl,_SCRN0
+	ld	a,[win_rtile]
+	addhla
+
+rept $20
+	ld	a,BlacktileBeginIndex
+	ld	[hl],a
+	ld	a,$20
+	addhla
+endr
+
+	ret
+
+LoadRealTilesR:
+	ret
 
 VBlank::
 	ld	a,[duration]
@@ -496,6 +540,18 @@ endr
 	add	b		; rSCX + dx -> a
 	ld	[rSCX],a	; rSCX += dx
 
+	; do we need to load new background tiles
+	;ld	a,[rSCX]	; already here from previous RAM write
+	and	a,%00000111
+	cp	1
+	call	LoadTilesR
+
+	;cp	(256-160)
+	;jp	c,.skip_movement
+	;add	a,0x20
+	; find rightmost tile in window
+
+.skip_movement
 	; scroll bg viewport downward by dy
 	ld	a,[dy]		; dy -> b
 	ld	b,a
@@ -683,4 +739,4 @@ pulsenote: macro
 
 	reti
 
-; vim: se ft=rgbds:
+; vim: se ft=rgbds ts=2 sw=2 sts=2 noet:
