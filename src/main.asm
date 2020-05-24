@@ -231,9 +231,18 @@ rept TILE_INIT_WIDTH
 	ld	[de],a
 	inc	de
 endr
-	ld	a,8
+
+.right_side_vblank			; fill the rest of the line with blank tiles until VRAM wraps to the next line
+	ld	a,BlacktileBeginIndex
+	ld	[de],a
+	inc	de
+	ld	a,e
+	and	%00011111
+	jr	nz,.right_side_vblank
+
+	ld	a,(WORLD_WIDTH - TILE_INIT_WIDTH)	; check if we're at the end
 	addhla
-	ld	a,h		; check if we're at the end
+	ld	a,h
 	cp	high(TilemapEnd)
 	jr	nz,.loop
 	ld	a,l
