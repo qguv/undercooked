@@ -403,8 +403,9 @@ ShowRealTilesL:
 rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
 	ld	a,[hl]
 	ld	[de],a
-	ld	a,$20
+	ld	a,WORLD_WIDTH
 	addhla
+	ld	a,$20
 	adddea
 endr
 	ret
@@ -441,9 +442,10 @@ ShowRealTilesR:
 rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
 	ld	a,[hl]			; *de = *hl
 	ld	[de],a
-	ld	a,$20
-	addhla				; hl += 0x20
-	adddea				; de += 0x20
+	ld	a,WORLD_WIDTH		; hl += world_width
+	addhla
+	ld	a,$20			; de += vram_width
+	adddea
 endr
 
 VBlank::
