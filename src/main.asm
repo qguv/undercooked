@@ -373,9 +373,6 @@ ShowTiles:
 	ret			; else { return; }
 
 ShowTilesL:
-	ld	a,[win_rtile]
-	dec	a
-	ld	[win_rtile],a
 	ld	a,[win_ltile]	; win_ltile--
 	dec	a
 	ld	[win_ltile],a
@@ -385,6 +382,7 @@ ShowTilesL:
 
 ShowBlankTilesL:
 	ld	a,[win_ltile]
+	and	%00011111
 	ld	hl,_SCRN0
 	addhla
 rept LEVEL_HEIGHT
@@ -397,6 +395,7 @@ endr
 
 ShowRealTilesL:
 	ld	a,[win_ltile]
+	and	%00011111
 	ld	de,_SCRN0
 	adddea
 	ld	a,[win_ltile]
@@ -413,9 +412,6 @@ endr
 	ret
 
 ShowTilesR:
-	ld	a,[win_ltile]
-	inc	a
-	ld	[win_ltile],a
 	ld	a,[win_rtile]	; win_rtile++
 	inc	a
 	ld	[win_rtile],a
@@ -427,6 +423,7 @@ ShowTilesR:
 
 ShowBlankTilesR:
 	ld	a,[win_rtile]
+	and	%00011111
 	ld	hl,_SCRN0
 	addhla
 rept LEVEL_HEIGHT
@@ -439,6 +436,7 @@ endr
 
 ShowRealTilesR:
 	ld	a,[win_rtile]
+	and	%00011111
 	ld	de,_SCRN0
 	adddea
 	ld	a,[win_rtile]
