@@ -261,7 +261,7 @@ endr
 	jp	nz,.surroundings
 
 	; the width index of the leftmost tile in VRAM
-	ld	a,$ff
+	ld	a,$1f
 	ld	[win_ltile],a
 	; the width index of the rightmost tile in VRAM
 	ld	a,(TILE_INIT_WIDTH - 1)
@@ -368,17 +368,52 @@ endr
 ShowTiles:
 	ld	a,[dx]		; if (dx == 1) { return ShowTilesR(); }
 	cp	1
-	jp	z,ShowTilesR
+	jp	z,ShowTilesCheckR
 	cp	$ff		; else if (dx == -1) { return ShowTilesL(); }
-	jp	z,ShowTilesL
+	jp	z,ShowTilesCheckL
 	ret			; else { return; }
+
+; do we need to load new tiles to the right?
+ShowTilesCheckR:
+	ld	a,[rSCX]	; get rightmost column
+rept 3
+	srl	a
+endr
+	add 20
+	ld	b,a
+	ld	a,[win_rtile]	; if (rightmost column != furthest right loaded) { return; }
+	cp	b
+	ret	nz
+	ld	a,[win_ltile]	; if (rightmost column != furthest left loaded) { return ShowTilesR(); }
+	cp	b
+	jp	nz,ShowTilesR
+	inc	a		; else { win_ltile++; }
+	ld	[win_ltile],a
+	jp	ShowTilesR	; return ShowTilesR()
+
+; do we need to load new tiles to the left?
+ShowTilesCheckL:
+	ld	a,[rSCX]	; get leftmost column
+rept 3
+	srl a
+endr
+	ld	b,a
+	ld	a,[win_ltile]	; if (leftmost column != furthest left loaded) { return; }
+	cp	b
+	ret	nz
+	ld	a,[win_rtile]	; if (leftmost column != furthest right loaded) { return ShowTilesL(); }
+	cp	b
+	jp	nz,ShowTilesL
+	dec	a		; else { win_rtile--; }
+	ld	[win_rtile],a
+	jp	ShowTilesL	; return ShowTilesL()
 
 ShowTilesL:
 	ld	a,[win_ltile]	; win_ltile--
 	dec	a
 	ld	[win_ltile],a
-	cp	LEVEL_WIDTH	; if (win_ltile < LEVEL_WIDTH) { return ShowRealTilesL(); }
-	jp	c,ShowRealTilesL
+	cp	LEVEL_WIDTH	; if (win_ltile >= LEVEL_WIDTH) { return ShowRealTilesL(); }
+	jp	nc,ShowRealTilesL
 	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
 
 ShowBlankTilesL:
