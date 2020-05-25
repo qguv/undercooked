@@ -264,8 +264,8 @@ endr
 	; the width index of the leftmost tile in VRAM
 	ldz
 	ld	[win_ltile],a
-	; one plus the width index of the rightmost tile in VRAM
-	ld	a,TILE_INIT_WIDTH
+	; the width index of the rightmost tile in VRAM
+	ld	a,(TILE_INIT_WIDTH - 1)
 	ld	[win_rtile],a
 
 	; we start at 7,9 in lfoot coordinates
@@ -365,36 +365,86 @@ endr
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
-LoadTilesR:
-	; if the tile is off the edge of the world, load a line of blank tiles
-	ld	a,[win_rtile]
-	cp	WORLD_WIDTH
-	call	c,LoadRealTilesR
-	call	LoadBlankTilesR
+; if we're moving past the last loaded tile, load another line of tiles in that direction
+ShowTiles:
+	ld	a,[dx]		; if (dx == 1) { return ShowTilesR(); }
+	cp	1
+	jr	z,ShowTilesR
+	cp	$ff			; else if (dx == -1) { return ShowTilesL(); }
+	jr	z,ShowTilesL
+	ret			; else { return; }
 
-	; win_rtile++
-	ld	a,[win_rtile]
-	inc	a
+ShowTilesL:
+	ld	a,[win_rtile]	; win_ltile--
+	dec	a
 	ld	[win_rtile],a
+	cp	WORLD_WIDTH	; if (win_ltile < WORLD_WIDTH) { return ShowRealTilesL(); }
+	jr	c,ShowRealTilesL
+	jr	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
 
-	ret
-
-LoadBlankTilesR:
+ShowBlankTilesL:
+	ld	a,[win_ltile]
 	ld	hl,_SCRN0
-	ld	a,[win_rtile]
 	addhla
-
 rept $20
 	ld	a,BlacktileBeginIndex
 	ld	[hl],a
 	ld	a,$20
 	addhla
 endr
-
 	ret
 
-LoadRealTilesR:
+ShowRealTilesL:
+	ld	a,[win_ltile]
+	ld	de,_SCRN0
+	adddea
+	ld	hl,Tilemap
+	addhla
+rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
+	ld	a,[hl]
+	ld	[de],a
+	ld	a,$20
+	addhla
+	adddea
+endr
 	ret
+
+ShowTilesR:
+	ld	a,[win_rtile]	; win_rtile++
+	inc	a
+	ld	[win_rtile],a
+
+	; if the tile is off the edge of the world, load a line of blank tiles
+	cp	WORLD_WIDTH
+	jr	c,ShowRealTilesR
+	jr	ShowBlankTilesR
+
+ShowBlankTilesR:
+	ld	a,[win_rtile]
+	ld	hl,_SCRN0
+	addhla
+rept $20
+	ld	a,BlacktileBeginIndex
+	ld	[hl],a
+	ld	a,$20
+	addhla
+endr
+	ret
+
+ShowRealTilesR:
+	ld	a,[win_rtile]
+	ld	de,_SCRN0
+	adddea
+	ld	hl,Tilemap
+	addhla
+
+rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
+	ld	a,[hl]			; *de = *hl
+	ld	[de],a
+	ld	a,$20
+	addhla				; hl += 0x20
+	adddea				; de += 0x20
+endr
 
 VBlank::
 	ld	a,[duration]
@@ -521,6 +571,8 @@ rept 2				; once for each foot
 endr
 .collision_end
 
+	call	ShowTiles	; load in a new line of tiles if necessary
+
 	; update lfootx and lfooty to new coordinates
 	ld	a,[dx]		; dx -> b
 	ld	b,a
@@ -548,17 +600,6 @@ endr
 	ld	a,[rSCX]	; rSCX -> a
 	add	b		; rSCX + dx -> a
 	ld	[rSCX],a	; rSCX += dx
-
-	; do we need to load new background tiles
-	;ld	a,[rSCX]	; already here from previous RAM write
-	and	a,%00000111
-	cp	1
-	call	LoadTilesR
-
-	;cp	(256-160)
-	;jp	c,.skip_movement
-	;add	a,0x20
-	; find rightmost tile in window
 
 .skip_movement
 	; scroll bg viewport downward by dy
