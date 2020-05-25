@@ -50,8 +50,6 @@ nonlava:
 	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
 nonlava_end:
 
-WORLD_WIDTH equ 40
-
 Tilemap: incbin "obj/tileset.tilemap"
 TilemapEnd:
 
@@ -240,7 +238,7 @@ endr
 	and	%00011111
 	jp	nz,.right_side_vblank
 
-	ld	a,(WORLD_WIDTH - TILE_INIT_WIDTH)	; check if we're at the end
+	ld	a,(LEVEL_WIDTH - TILE_INIT_WIDTH)	; check if we're at the end
 	addhla
 	ld	a,h
 	cp	high(TilemapEnd)
@@ -378,7 +376,7 @@ ShowTilesL:
 	ld	a,[win_rtile]	; win_ltile--
 	dec	a
 	ld	[win_rtile],a
-	cp	WORLD_WIDTH	; if (win_ltile < WORLD_WIDTH) { return ShowRealTilesL(); }
+	cp	LEVEL_WIDTH	; if (win_ltile < LEVEL_WIDTH) { return ShowRealTilesL(); }
 	jp	c,ShowRealTilesL
 	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
 
@@ -400,10 +398,10 @@ ShowRealTilesL:
 	adddea
 	ld	hl,Tilemap
 	addhla
-rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
+rept ((TilemapEnd - Tilemap) / LEVEL_WIDTH)	; copy #world_height tiles
 	ld	a,[hl]
 	ld	[de],a
-	ld	a,WORLD_WIDTH
+	ld	a,LEVEL_WIDTH
 	addhla
 	ld	a,$20
 	adddea
@@ -416,7 +414,7 @@ ShowTilesR:
 	ld	[win_rtile],a
 
 	; if the tile is off the edge of the world, load a line of blank tiles
-	cp	WORLD_WIDTH
+	cp	LEVEL_WIDTH
 	jp	c,ShowRealTilesR
 	jp	ShowBlankTilesR
 
@@ -439,10 +437,10 @@ ShowRealTilesR:
 	ld	hl,Tilemap
 	addhla
 
-rept ((TilemapEnd - Tilemap) / WORLD_WIDTH)	; copy #world_height tiles
+rept ((TilemapEnd - Tilemap) / LEVEL_WIDTH)	; copy #world_height tiles
 	ld	a,[hl]			; *de = *hl
 	ld	[de],a
-	ld	a,WORLD_WIDTH		; hl += world_width
+	ld	a,LEVEL_WIDTH		; hl += world_width
 	addhla
 	ld	a,$20			; de += vram_width
 	adddea
