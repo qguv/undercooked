@@ -19,7 +19,7 @@ include "src/music.asm"
 
 TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-numbered tiles (useful for 8x16 sprites)
 LEVEL_WIDTH equ 40
-LEVEL_HEIGHT equ 18
+LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL_WIDTH)
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 TILE_INIT_WIDTH equ 21
@@ -260,7 +260,7 @@ endr
 	jp	nz,.surroundings
 
 	; the width index of the leftmost tile in VRAM
-	ldz
+	ld	a,$ff
 	ld	[win_ltile],a
 	; the width index of the rightmost tile in VRAM
 	ld	a,(TILE_INIT_WIDTH - 1)
@@ -368,14 +368,17 @@ ShowTiles:
 	ld	a,[dx]		; if (dx == 1) { return ShowTilesR(); }
 	cp	1
 	jp	z,ShowTilesR
-	cp	$ff			; else if (dx == -1) { return ShowTilesL(); }
+	cp	$ff		; else if (dx == -1) { return ShowTilesL(); }
 	jp	z,ShowTilesL
 	ret			; else { return; }
 
 ShowTilesL:
-	ld	a,[win_rtile]	; win_ltile--
+	ld	a,[win_rtile]
 	dec	a
 	ld	[win_rtile],a
+	ld	a,[win_ltile]	; win_ltile--
+	dec	a
+	ld	[win_ltile],a
 	cp	LEVEL_WIDTH	; if (win_ltile < LEVEL_WIDTH) { return ShowRealTilesL(); }
 	jp	c,ShowRealTilesL
 	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
@@ -384,7 +387,7 @@ ShowBlankTilesL:
 	ld	a,[win_ltile]
 	ld	hl,_SCRN0
 	addhla
-rept $20
+rept LEVEL_HEIGHT
 	ld	a,BlacktileBeginIndex
 	ld	[hl],a
 	ld	a,$20
@@ -396,9 +399,10 @@ ShowRealTilesL:
 	ld	a,[win_ltile]
 	ld	de,_SCRN0
 	adddea
+	ld	a,[win_ltile]
 	ld	hl,Tilemap
 	addhla
-rept ((TilemapEnd - Tilemap) / LEVEL_WIDTH)	; copy #world_height tiles
+rept LEVEL_HEIGHT
 	ld	a,[hl]
 	ld	[de],a
 	ld	a,LEVEL_WIDTH
@@ -409,6 +413,9 @@ endr
 	ret
 
 ShowTilesR:
+	ld	a,[win_ltile]
+	inc	a
+	ld	[win_ltile],a
 	ld	a,[win_rtile]	; win_rtile++
 	inc	a
 	ld	[win_rtile],a
@@ -422,7 +429,7 @@ ShowBlankTilesR:
 	ld	a,[win_rtile]
 	ld	hl,_SCRN0
 	addhla
-rept $20
+rept LEVEL_HEIGHT
 	ld	a,BlacktileBeginIndex
 	ld	[hl],a
 	ld	a,$20
@@ -434,10 +441,10 @@ ShowRealTilesR:
 	ld	a,[win_rtile]
 	ld	de,_SCRN0
 	adddea
+	ld	a,[win_rtile]
 	ld	hl,Tilemap
 	addhla
-
-rept ((TilemapEnd - Tilemap) / LEVEL_WIDTH)	; copy #world_height tiles
+rept LEVEL_HEIGHT
 	ld	a,[hl]			; *de = *hl
 	ld	[de],a
 	ld	a,LEVEL_WIDTH		; hl += world_width
@@ -445,6 +452,7 @@ rept ((TilemapEnd - Tilemap) / LEVEL_WIDTH)	; copy #world_height tiles
 	ld	a,$20			; de += vram_width
 	adddea
 endr
+	ret
 
 VBlank::
 	ld	a,[duration]
