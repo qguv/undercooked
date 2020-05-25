@@ -48,6 +48,7 @@ nonlava:
 	db	$89						; kitchen tile
 	db	$4e, $4f, $5e, $5f				; wood
 	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
+	db	$63, $74, $86, $a0				; carpet, right edge
 nonlava_end:
 
 Tilemap: incbin "obj/tileset.tilemap"
