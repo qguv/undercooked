@@ -797,4 +797,4 @@ pulsenote: macro
 
 	reti
 
-; vim: se ft=rgbds ts=2 sw=2 sts=2 noet:
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
