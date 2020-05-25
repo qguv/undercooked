@@ -238,16 +238,16 @@ endr
 	inc	de
 	ld	a,e
 	and	%00011111
-	jr	nz,.right_side_vblank
+	jp	nz,.right_side_vblank
 
 	ld	a,(WORLD_WIDTH - TILE_INIT_WIDTH)	; check if we're at the end
 	addhla
 	ld	a,h
 	cp	high(TilemapEnd)
-	jr	nz,.loop
+	jp	nz,.loop
 	ld	a,l
 	cp	low(TilemapEnd)
-	jr	nz,.loop
+	jp	nz,.loop
 
 	ld	h,d
 	ld	l,e
@@ -256,10 +256,10 @@ endr
 	ld	[hl+],a
 	ld	a,h
 	cp	high(_SCRN1)
-	jr	nz,.surroundings
+	jp	nz,.surroundings
 	ld	a,l
 	cp	low(_SCRN1)
-	jr	nz,.surroundings
+	jp	nz,.surroundings
 
 	; the width index of the leftmost tile in VRAM
 	ldz
@@ -294,7 +294,7 @@ endr
 	ld	a,[spr_index]
 	dec	a
 	ld	[spr_index],a
-	jr	nz,.smt_row		; ...and loop if there's more sprites to process
+	jp	nz,.smt_row		; ...and loop if there's more sprites to process
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
 	; turn LCD on
@@ -315,7 +315,7 @@ endr
 	; wait for vblank
 	halt
 	nop
-	jr	.wait
+	jp	.wait
 
 StopLCD:
 	ld	a,[rLCDC]
@@ -326,7 +326,7 @@ StopLCD:
 	; wait for vblank scan line 145
 	ld	a,[rLY]
 	cp	145
-	jr	nz,.wait
+	jp	nz,.wait
 
 	; turn off the LCD
 	ld	a,[rLCDC]
@@ -369,9 +369,9 @@ endr
 ShowTiles:
 	ld	a,[dx]		; if (dx == 1) { return ShowTilesR(); }
 	cp	1
-	jr	z,ShowTilesR
+	jp	z,ShowTilesR
 	cp	$ff			; else if (dx == -1) { return ShowTilesL(); }
-	jr	z,ShowTilesL
+	jp	z,ShowTilesL
 	ret			; else { return; }
 
 ShowTilesL:
@@ -379,8 +379,8 @@ ShowTilesL:
 	dec	a
 	ld	[win_rtile],a
 	cp	WORLD_WIDTH	; if (win_ltile < WORLD_WIDTH) { return ShowRealTilesL(); }
-	jr	c,ShowRealTilesL
-	jr	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
+	jp	c,ShowRealTilesL
+	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
 
 ShowBlankTilesL:
 	ld	a,[win_ltile]
@@ -416,8 +416,8 @@ ShowTilesR:
 
 	; if the tile is off the edge of the world, load a line of blank tiles
 	cp	WORLD_WIDTH
-	jr	c,ShowRealTilesR
-	jr	ShowBlankTilesR
+	jp	c,ShowRealTilesR
+	jp	ShowBlankTilesR
 
 ShowBlankTilesR:
 	ld	a,[win_rtile]
@@ -455,7 +455,7 @@ VBlank::
 	call ReadJoypad
 	ld	a,[buttons]
 	and	$f0			; is a movement button held?
-	jr	nz,.parsemovement	; if so, process it
+	jp	nz,.parsemovement	; if so, process it
 .haltmovement
 	ldz				; clear out current movement command
 	ld	[dx],a
@@ -466,64 +466,64 @@ VBlank::
 	ld	a,[buttons]
 	and	PADF_UP | PADF_DOWN	; moving up or down?
 	cpz
-	jr	z,.xmovement
+	jp	z,.xmovement
 ;ymovement
 	and	PADF_UP			; moving up?
 	cpz
-	jr	nz,.up
+	jp	nz,.up
 ;down
 	ld	a,SOUTHWARD		; turn
 	ld	[direction],a
 	ld	a,[lfooty]		;if you're at the bottom edge, you can't move down
 	cp	LEVEL_HEIGHT - CHARACTER_HEIGHT - 1
-	jr	z,.haltmovement
+	jp	z,.haltmovement
 	ld	a,1			; move down
 	ld	[dy],a
 	ldz
 	ld	[dx],a
-	jr	.collision
+	jp	.collision
 .up
 	ld	a,NORTHWARD		; turn
 	ld	[direction],a
 	ld	a,[lfooty]		; if you're at the top edge, you can't move up
 	cpz
-	jr	z,.haltmovement
+	jp	z,.haltmovement
 	ld	a,$ff			; move up
 	ld	[dy],a
 	ldz
 	ld	[dx],a
-	jr	.collision
+	jp	.collision
 .xmovement
 	ld	a,[buttons]
 	and	PADF_LEFT		; moving left?
 	cpz
-	jr	nz,.left
+	jp	nz,.left
 ;right
 	ld	a,EASTWARD		; turn
 	ld	[direction],a
 	ld	a,[lfootx]		; if you're at the rightmost edge, you can't move right
 	cp	LEVEL_WIDTH - 2		; (subtract one to account for your RIGHT foot and one because you need to check it earlier)
-	jr	z,.haltmovement
+	jp	z,.haltmovement
 	ld	a,1			; move right
 	ld	[dx],a
 	ldz
 	ld	[dy],a
-	jr	.collision
+	jp	.collision
 .left
 	ld	a,WESTWARD		; turn
 	ld	[direction],a
 	ld	a,[lfootx]		; if you're at the leftmost edge, you can't move left
 	cpz
-	jr	z,.haltmovement
+	jp	z,.haltmovement
 	ld	a,$ff			; move left
 	ld	[dx],a
 	ldz
 	ld	[dy],a
-	;jr	.collision
+	;jp	.collision
 
 .collision
 if !COLLISION_DETECTION
-	jr	.collision_end
+	jp	.collision_end
 endc
 	; at (lfootx,lfooty) we test tilemap entry = firsttile + (40 * lfooty) + lfootx
 	; where firsttile represents the tile (with respect to the "real" tile map)
@@ -546,12 +546,12 @@ endc
 	ld	b,0		; 40 -> bc
 	ld	c,40
 	cpz
-	jr	.mulcheck
+	jp	.mulcheck
 .muladd
 	add	hl,bc
 	dec	a
 .mulcheck
-	jr	nz,.muladd
+	jp	nz,.muladd
 ;mulend				; hl = Tilemap[firsttile + (lfootx + dx) + ((lfooty + dy) * 40)]
 rept 2				; once for each foot
 	ld	a,[hl+]		; left foot tile -> e
@@ -614,20 +614,20 @@ endr
 	ld	[spr_index],a
 	ld	hl,SMT_RAM
 	ld	bc,_OAMRAM
-	jr	.first_sprite
+	jp	.first_sprite
 .next_sprite
 	ld	a,[spr_index]
 	dec	a
-	jr	z,.anim_end
+	jp	z,.anim_end
 	ld	[spr_index],a
 .first_sprite
 	ld	a,[hl]		; (byte 0 bit 0) check if this row is active
 	and	SMTF_ACTIVE
-	jr	z,.next_inactive	; ...if not, skip it
+	jp	z,.next_inactive	; ...if not, skip it
 ;position_update
 	ld	a,[hl]		; (byte 0 bit 1) do we need to move with the screen?
 	and	SMTF_WORLD_FIXED
-	jr	z,.no_position_update	; ...if not, don't do position updating
+	jp	z,.no_position_update	; ...if not, don't do position updating
 	ld	a,[dy]		; dy -> d
 	ld	d,a
 	ld	a,[bc]		; OAM y pos -> a
@@ -640,23 +640,23 @@ endr
 	sub	d		; OAM x pos - dx -> a
 	ld	[bc],a		; OAM x pos -= dx
 	inc	bc
-	jr	.advance_animation
+	jp	.advance_animation
 .no_position_update
 rept 2
 	inc	bc
 endr
-	;jr	.advance_animation
+	;jp	.advance_animation
 .advance_animation
 	ld	a,[hl+]		; (byte 0 bit 2) should we animate?
 	and	SMTF_ANIMATED
-	jr	z,.next_noanim
+	jp	z,.next_noanim
 	ld	a,[hl]		; (byte 1 low nybble) animation stall amount -> d
 	and	$0f
 	ld	d,a
 	ld	a,[hl]		; (byte 1 high nybble) animation stall counter -> a
 	swap	a
 	and	$0f
-	jr	nz,.decrease_stall	; we animate only when the counter reaches zero. if it's not zero, just decrease it this frame
+	jp	nz,.decrease_stall	; we animate only when the counter reaches zero. if it's not zero, just decrease it this frame
 	ld	a,d		; reset the stall counter to the stall amount
 	swap	a		; combine the two nybbles
 	or	d
@@ -679,14 +679,14 @@ endr
 	adddea
 	ld	a,[de]		; new tile index -> OAM current tile
 	ld	[bc],a
-	jr	.after_animation
+	jp	.after_animation
 
 .decrease_stall
 	dec	a		; decrease the animation stall counter
 	swap	a		; combine the two nybbles
 	or	d
 	ld	[hl+],a		; write back to the RAM SMT
-	jr	.next_stalled
+	jp	.next_stalled
 
 .next_inactive
 rept 2
@@ -702,14 +702,14 @@ endr
 .after_animation
 	inc bc
 	inc bc
-	jr .next_sprite
+	jp .next_sprite
 
 .anim_end
 
 HandleNotes:
 	ld	a,[note_dur]		; if duration of previous note is expired, continue
 	cpz
-	jr	z,.next_note
+	jp	z,.next_note
 	dec	a			; otherwise decrement and return
 	ld	[note_dur],a
 	reti
@@ -723,13 +723,13 @@ HandleNotes:
 	ld	a,[note_swindex]	; increase note swing index
 	inc	a
 	cp	NoteDurationEnd-NoteDuration	; wrap if necessary
-	jr	c,.dont_wrap
+	jp	c,.dont_wrap
 	ldz
 .dont_wrap
 	ld	[note_swindex],a
 	ld	a,[note_index]		; get note index
 	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
-	jr	nz,.sound_registers
+	jp	nz,.sound_registers
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
 	ld	[song_repeated],a
 
@@ -744,15 +744,15 @@ pulsenote: macro
 
 	ld	a,c			; if it's a rest, don't set any registers for this note
 	cp	REST
-	jr	z,.end\@
+	jp	z,.end\@
 
 	cp	KILL			; if it's a kill command, stop the note
-	jr	nz,.nocut\@
+	jp	nz,.nocut\@
 	ldz
 	ld	[\6],a
 	ld	a,$80
 	ld	[\8],a
-	jr	.end\@
+	jp	.end\@
 .nocut\@
 
 	; index the note frequency table with the actual note value to get the note frequency (16-bit)
