@@ -13,6 +13,10 @@ section "Org $100",ROM0[$100]
 include "lib/memory.asm"
 include "src/music.asm"
 
+; TODO use hw constants instead
+VRAM_WIDTH equ $20
+SCREEN_WIDTH equ 20
+
 ;------------------------,
 ; Configurable constants ;
 ;________________________'
@@ -22,7 +26,6 @@ LEVEL_WIDTH equ 40
 LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL_WIDTH)
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
-TILE_INIT_WIDTH equ 21
 
 ;-------,
 ; Tiles ;
@@ -120,8 +123,13 @@ note_dur	rb 1		; counter for frames within note
 note_swindex	rb 1		; index into the swing table
 note_index	rb 1		; index of note in song
 duration	rb 1		; how many vblank frames of the current directive are left
-win_ltile	rb 1		; one tile left of the leftmost loaded tile
-win_rtile	rb 1		; the rightmost loaded tile
+vram_ringl	rb 1		; VRAM last loaded tile width index on the left (wraps around)
+vram_ringr	rb 1		; VRAM last loaded tile width index on the right (wraps around)
+maploadl	rb 1
+maploadr	rb 1
+map_oob		rb 1		; lsb = whether right side oob, 2nd lsb = whether left side oob
+MAP_OOB_LEFT	set 2
+MAP_OOB_RIGHT	set 1
 dx		rb 1
 dy		rb 1
 lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
@@ -217,55 +225,32 @@ vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	LoadTiles Star,StarFrames
 	LoadTiles Southward,SouthwardFrames
 
-	; blit tilemap
 if TilesetBeginIndex != 0
 	fail "the first tiles in tile memory must be the tileset used by the tilemap!"
 endc
-	ld	de,_SCRN0
-	ld	hl,Tilemap
+
+; blank screen
+	ld	hl,_SCRN0
 .loop
-	nop
-rept TILE_INIT_WIDTH
-	ld	a,[hl+]
-	ld	[de],a
-	inc	de
-endr
-
-.right_side_vblank			; fill the rest of the line with blank tiles until VRAM wraps to the next line
-	ld	a,BlacktileBeginIndex
-	ld	[de],a
-	inc	de
-	ld	a,e
-	and	%00011111
-	jp	nz,.right_side_vblank
-
-	ld	a,(LEVEL_WIDTH - TILE_INIT_WIDTH)	; check if we're at the end
-	addhla
-	ld	a,h
-	cp	high(TilemapEnd)
-	jp	nz,.loop
-	ld	a,l
-	cp	low(TilemapEnd)
-	jp	nz,.loop
-
-	ld	h,d
-	ld	l,e
-.surroundings
 	ld	a,BlacktileBeginIndex
 	ld	[hl+],a
-	ld	a,h
-	cp	high(_SCRN1)
-	jp	nz,.surroundings
 	ld	a,l
-	cp	low(_SCRN1)
-	jp	nz,.surroundings
+	cp	low(_SCRN0 + $400)
+	jp	nz,.loop
+	ld	a,h
+	cp	high(_SCRN0 + $400)
+	jp	nz,.loop
 
-	; the width index of the leftmost tile in VRAM
-	ld	a,$1f
-	ld	[win_ltile],a
-	; the width index of the rightmost tile in VRAM
-	ld	a,(TILE_INIT_WIDTH - 1)
-	ld	[win_rtile],a
+	ld	a,VRAM_WIDTH - 1
+	ld	[vram_ringr],a
+	ld	a,$ff
+	ld	[maploadr],a
+rept SCREEN_WIDTH + 1
+	call ShowTilesR
+endr
+	;ldz
+	;ld	[map_oob],a
+	;ld	[vram_ringl],a
 
 	; we start at 7,9 in lfoot coordinates
 	ld	a,9
@@ -364,60 +349,118 @@ endr
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
-; if we're moving past the last loaded tile, load another line of tiles in that direction
+; if we're moving left or right, load new tiles into VRAM before they're visible
 ShowTiles:
 	ld	a,[dx]		; if (dx == 1) { return ShowTilesR(); }
 	cp	1
-	jp	z,ShowTilesCheckR
+	jp	z,CheckShowTilesR
 	cp	$ff		; else if (dx == -1) { return ShowTilesL(); }
 	jp	z,ShowTilesCheckL
 	ret			; else { return; }
 
 ; do we need to load new tiles to the right?
-ShowTilesCheckR:
-	ld	a,[rSCX]	; get rightmost column
+CheckShowTilesR:
+	ld	a,[rSCX]	; b <- about-to-be-seen rightmost column
 rept 3
 	srl	a
 endr
-	add 20
+	add	SCREEN_WIDTH
+	and	VRAM_WIDTH - 1
 	ld	b,a
-	ld	a,[win_rtile]	; if (rightmost column != furthest right loaded) { return; }
+	ld	a,[vram_ringr]	; if (rightmost loaded column != about-to-be-seen rightmost column) { return; }
 	cp	b
 	ret	nz
-	ld	a,[win_ltile]	; if (rightmost column != furthest left loaded) { return ShowTilesR(); }
+	call	ShowTilesR
+	ld	a,[vram_ringr]	; b <- new rightmost loaded column
+	ld	b,a
+	ld	a,[vram_ringl]	; if (leftmost loaded column == new rightmost loaded column) { return UnloadTilesL(); }
 	cp	b
-	jp	nz,ShowTilesR
-	inc	a		; else { win_ltile++; }
-	ld	[win_ltile],a
-	jp	ShowTilesR	; return ShowTilesR()
+	jp	z,UnloadTilesL
+	ret
+
+ShowTilesR:
+	ld	a,[vram_ringr]	; rightmost loaded column++
+	inc	a
+	and	VRAM_WIDTH - 1
+	ld	[vram_ringr],a
+	ld	a,[maploadr]	; rightmost loaded map position++
+	inc	a
+	ld	[maploadr],a
+	call	UpdateRightOob
+	ld	a,[map_oob]	; if (out of bounds on the right) { return ShowBlankTilesR(); }
+	and	MAP_OOB_RIGHT
+	jp	nz,ShowBlankTilesR
+	jp	ShowRealTilesR	; return ShowRealTilesR()
+	;ret
+
+UpdateRightOob:
+	ld	a,[maploadr]	; if (maploadr != LEVEL_WIDTH) { return; }
+	cp	LEVEL_WIDTH
+	ret	nz
+	ld	b,MAP_OOB_RIGHT	; map oob right = true
+	ld	a,[map_oob]
+	or	b
+	ld	[map_oob],a
+	ret
+
+UnloadTilesL:
+	ld	a,[vram_ringl]	; vram_ringl++ mod VRAM_WIDTH
+	inc	a
+	and	VRAM_WIDTH - 1
+	ld	[vram_ringl],a
+	ld	a,[maploadl]	; maploadl++
+	inc	a
+	ld	[maploadl],a
+	cpz			; if (maploadl != 0) { return; }
+	ret	z
+	ld	a,[map_oob]	; map_oob_left = false;
+	and	%11111101
+	ld	[map_oob],a
+	ret
+
+UnloadTilesR:
+	ld	a,[vram_ringr]	; vram_ringr-- mod VRAM_WIDTH
+	add	VRAM_WIDTH - 1
+	and	VRAM_WIDTH - 1
+	ld	[vram_ringr],a
+	ld	a,[maploadr]	; maploadr--
+	dec	a
+	ld	[maploadr],a
+	cp	LEVEL_WIDTH - 1	; if (maploadr != LEVEL_WIDTH - 1) { return; }
+	ret	z
+	ld	a,[map_oob]	; map_oob_right = false;
+	and	%11111110
+	ld	[map_oob],a
+	ret
 
 ; do we need to load new tiles to the left?
+; TODO FIXME test showtilesr and then rewrite this based on that. don't forget map_oob!
 ShowTilesCheckL:
-	ld	a,[rSCX]	; get leftmost column
+	ld	a,[rSCX]	; b <- current leftmost column
 rept 3
 	srl a
 endr
 	ld	b,a
-	ld	a,[win_ltile]	; if (leftmost column != furthest left loaded) { return; }
+	ld	a,[vram_ringl]	; if (leftmost column != furthest left loaded) { return; }
 	cp	b
 	ret	nz
-	ld	a,[win_rtile]	; if (leftmost column != furthest right loaded) { return ShowTilesL(); }
+	ld	a,[vram_ringr]	; if (leftmost column != furthest right loaded) { return ShowTilesL(); }
 	cp	b
 	jp	nz,ShowTilesL
-	dec	a		; else { win_rtile--; }
-	ld	[win_rtile],a
+	dec	a		; else { vram_ringr--; }
+	ld	[vram_ringr],a
 	jp	ShowTilesL	; return ShowTilesL()
 
 ShowTilesL:
-	ld	a,[win_ltile]	; win_ltile--
+	ld	a,[vram_ringl]	; vram_ringl--
 	dec	a
-	ld	[win_ltile],a
-	cp	LEVEL_WIDTH	; if (win_ltile >= LEVEL_WIDTH) { return ShowRealTilesL(); }
+	ld	[vram_ringl],a
+	cp	LEVEL_WIDTH	; if (vram_ringl >= LEVEL_WIDTH) { return ShowRealTilesL(); }
 	jp	nc,ShowRealTilesL
 	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
 
 ShowBlankTilesL:
-	ld	a,[win_ltile]
+	ld	a,[vram_ringl]
 	and	%00011111
 	ld	hl,_SCRN0
 	addhla
@@ -430,11 +473,11 @@ endr
 	ret
 
 ShowRealTilesL:
-	ld	a,[win_ltile]
+	ld	a,[vram_ringl]
 	and	%00011111
 	ld	de,_SCRN0
 	adddea
-	ld	a,[win_ltile]
+	ld	a,[vram_ringl]
 	ld	hl,Tilemap
 	addhla
 rept LEVEL_HEIGHT
@@ -447,18 +490,8 @@ rept LEVEL_HEIGHT
 endr
 	ret
 
-ShowTilesR:
-	ld	a,[win_rtile]	; win_rtile++
-	inc	a
-	ld	[win_rtile],a
-
-	; if the tile is off the edge of the world, load a line of blank tiles
-	cp	LEVEL_WIDTH
-	jp	c,ShowRealTilesR
-	jp	ShowBlankTilesR
-
 ShowBlankTilesR:
-	ld	a,[win_rtile]
+	ld	a,[vram_ringr]
 	and	%00011111
 	ld	hl,_SCRN0
 	addhla
@@ -471,11 +504,11 @@ endr
 	ret
 
 ShowRealTilesR:
-	ld	a,[win_rtile]
+	ld	a,[vram_ringr]		; de <- _SCRN0 + new rightmost VRAM column
 	and	%00011111
 	ld	de,_SCRN0
 	adddea
-	ld	a,[win_rtile]
+	ld	a,[maploadr]		; hl <- Tilemap + now rightmost map column
 	ld	hl,Tilemap
 	addhla
 rept LEVEL_HEIGHT
