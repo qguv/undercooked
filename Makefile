@@ -5,7 +5,7 @@ RELEASESDIR = releases
 LIBDIR = lib
 WORKDIR := tmp_$(shell date +%s)
 ROMPATH := undercooked_$(shell git describe --tags --dirty).gb
-EMULATOR := bgb -nobatt
+EMULATOR := bgb -nobatt -watch
 
 # disable suffix rule interpretation
 .SUFFIXES:
@@ -88,7 +88,7 @@ play: $(OBJDIR)/main.gb
 
 .PHONY: debug
 debug: $(OBJDIR)/main.gb
-	$(BGB) -setting StartDebug=1 -nobatt "$<"
+	$(EMULATOR) -setting StartDebug=1 "$<"
 
 .PHONY: clean
 clean:
