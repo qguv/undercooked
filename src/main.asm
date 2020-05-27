@@ -241,6 +241,7 @@ endc
 	cp	high(_SCRN0 + $400)
 	jp	nz,.loop
 
+; load initial screen of tiles
 	ld	a,VRAM_WIDTH - 1
 	ld	[vram_ringr],a
 	ld	a,$ff
@@ -248,9 +249,6 @@ endc
 rept SCREEN_WIDTH + 1
 	call ShowTilesR
 endr
-	;ldz
-	;ld	[map_oob],a
-	;ld	[vram_ringl],a
 
 	; we start at 7,9 in lfoot coordinates
 	ld	a,9
@@ -355,7 +353,7 @@ ShowTiles:
 	cp	1
 	jp	z,CheckShowTilesR
 	cp	$ff		; else if (dx == -1) { return ShowTilesL(); }
-	jp	z,ShowTilesCheckL
+	jp	z,CheckShowTilesL
 	ret			; else { return; }
 
 ; do we need to load new tiles to the right?
@@ -378,8 +376,28 @@ endr
 	jp	z,UnloadTilesL
 	ret
 
+; do we need to load new tiles to the left?
+CheckShowTilesL:
+	ld	a,[rSCX]	; b <- about-to-be-seen leftmost column
+rept 3
+	srl	a
+endr
+	add	VRAM_WIDTH - 1
+	and	VRAM_WIDTH - 1
+	ld	b,a
+	ld	a,[vram_ringl]	; if (leftmost loaded column != about-to-be-seen leftmost column) { return; }
+	cp	b
+	ret	nz
+	call	ShowTilesL
+	ld	a,[vram_ringl]	; b <- new leftmost loaded column
+	ld	b,a
+	ld	a,[vram_ringr]	; if (rightmost loaded column == new leftmost loaded column) { return UnloadTilesR(); }
+	cp	b
+	jp	z,UnloadTilesR
+	ret
+
 ShowTilesR:
-	ld	a,[vram_ringr]	; rightmost loaded column++
+	ld	a,[vram_ringr]	; rightmost loaded column++ mod VRAM_WIDTH
 	inc	a
 	and	VRAM_WIDTH - 1
 	ld	[vram_ringr],a
@@ -390,7 +408,29 @@ ShowTilesR:
 	ld	a,[map_oob]	; if (out of bounds on the right) { return ShowBlankTilesR(); }
 	and	MAP_OOB_RIGHT
 	jp	nz,ShowBlankTilesR
-	jp	ShowRealTilesR	; return ShowRealTilesR()
+	ld	a,[vram_ringr]		; b <- rightmost VRAM column
+	ld	b,a
+	ld	a,[maploadr]		; c <- rightmost map column
+	ld	c,a
+	jp	ShowRealTiles__ab
+	;ret
+
+ShowTilesL:
+	ld	a,[vram_ringl]	; leftmost loaded column-- mod VRAM_WIDTH
+	add	VRAM_WIDTH - 1
+	and	VRAM_WIDTH - 1
+	ld	[vram_ringl],a
+	ld	a,[maploadl]	; leftmost loaded map position--
+	dec	a
+	ld	[maploadl],a
+	call UpdateLeftOob
+	ld	a,[map_oob]	; if (out of bounds on the left) { return ShowBlankTilesL(); }
+	and	MAP_OOB_LEFT
+	jp	nz,ShowBlankTilesL
+	ld	a,[vram_ringl]		; b <- leftmost VRAM column
+	ld	b,a
+	ld	a,[maploadl]		; a <- leftmost map column
+	jp	ShowRealTiles__ab
 	;ret
 
 UpdateRightOob:
@@ -398,6 +438,16 @@ UpdateRightOob:
 	cp	LEVEL_WIDTH
 	ret	nz
 	ld	b,MAP_OOB_RIGHT	; map oob right = true
+	ld	a,[map_oob]
+	or	b
+	ld	[map_oob],a
+	ret
+
+UpdateLeftOob:
+	ld	a,[maploadl]	; if (maploadl != -1) { return; }
+	inc	a
+	ret	nz
+	ld	b,MAP_OOB_LEFT	; map oob left = true
 	ld	a,[map_oob]
 	or	b
 	ld	[map_oob],a
@@ -414,7 +464,7 @@ UnloadTilesL:
 	cpz			; if (maploadl != 0) { return; }
 	ret	z
 	ld	a,[map_oob]	; map_oob_left = false;
-	and	%11111101
+	and	~MAP_OOB_LEFT
 	ld	[map_oob],a
 	ret
 
@@ -429,70 +479,22 @@ UnloadTilesR:
 	cp	LEVEL_WIDTH - 1	; if (maploadr != LEVEL_WIDTH - 1) { return; }
 	ret	z
 	ld	a,[map_oob]	; map_oob_right = false;
-	and	%11111110
+	and	~MAP_OOB_RIGHT
 	ld	[map_oob],a
-	ret
-
-; do we need to load new tiles to the left?
-; TODO FIXME test showtilesr and then rewrite this based on that. don't forget map_oob!
-ShowTilesCheckL:
-	ld	a,[rSCX]	; b <- current leftmost column
-rept 3
-	srl a
-endr
-	ld	b,a
-	ld	a,[vram_ringl]	; if (leftmost column != furthest left loaded) { return; }
-	cp	b
-	ret	nz
-	ld	a,[vram_ringr]	; if (leftmost column != furthest right loaded) { return ShowTilesL(); }
-	cp	b
-	jp	nz,ShowTilesL
-	dec	a		; else { vram_ringr--; }
-	ld	[vram_ringr],a
-	jp	ShowTilesL	; return ShowTilesL()
-
-ShowTilesL:
-	ld	a,[vram_ringl]	; vram_ringl--
-	dec	a
-	ld	[vram_ringl],a
-	cp	LEVEL_WIDTH	; if (vram_ringl >= LEVEL_WIDTH) { return ShowRealTilesL(); }
-	jp	nc,ShowRealTilesL
-	jp	ShowBlankTilesL	; else { return ShowBlankTilesL(); }
-
-ShowBlankTilesL:
-	ld	a,[vram_ringl]
-	and	%00011111
-	ld	hl,_SCRN0
-	addhla
-rept LEVEL_HEIGHT
-	ld	a,BlacktileBeginIndex
-	ld	[hl],a
-	ld	a,$20
-	addhla
-endr
-	ret
-
-ShowRealTilesL:
-	ld	a,[vram_ringl]
-	and	%00011111
-	ld	de,_SCRN0
-	adddea
-	ld	a,[vram_ringl]
-	ld	hl,Tilemap
-	addhla
-rept LEVEL_HEIGHT
-	ld	a,[hl]
-	ld	[de],a
-	ld	a,LEVEL_WIDTH
-	addhla
-	ld	a,$20
-	adddea
-endr
 	ret
 
 ShowBlankTilesR:
 	ld	a,[vram_ringr]
-	and	%00011111
+	jp	ShowBlankTiles__a
+	;ret
+
+ShowBlankTilesL:
+	ld	a,[vram_ringl]
+	jp	ShowBlankTiles__a
+	;ret
+
+; arg a: vram index to start
+ShowBlankTiles__a:
 	ld	hl,_SCRN0
 	addhla
 rept LEVEL_HEIGHT
@@ -503,14 +505,14 @@ rept LEVEL_HEIGHT
 endr
 	ret
 
-ShowRealTilesR:
-	ld	a,[vram_ringr]		; de <- _SCRN0 + new rightmost VRAM column
-	and	%00011111
+; arg a: max map column
+; arg b: max VRAM column
+ShowRealTiles__ab:
+	ld	hl,Tilemap		; hl <- Tilemap + new max map column
+	addhla
+	ld	a,b			; de <- _SCRN0 + new max VRAM column
 	ld	de,_SCRN0
 	adddea
-	ld	a,[maploadr]		; hl <- Tilemap + now rightmost map column
-	ld	hl,Tilemap
-	addhla
 rept LEVEL_HEIGHT
 	ld	a,[hl]			; *de = *hl
 	ld	[de],a

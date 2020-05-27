@@ -33,7 +33,8 @@ addresses:
 .jump_label                 ; jump labels within subroutines
 ;convenience_label          ; label for a section of code that's currently entered by fallthrough
 .label_in_macro\@           ; jump labels within macros
-SomeFunction:               ; a non-exported function
+SomeFunction:               ; a non-exported subroutine
+SomeFunction__abcdehl:      ; a non-exported subroutine reading registers a, b, c, d, e, h, and l as arguments
 SomeData                    ; exported data, probably array/string
 _GBHW_ADDR or _GBHWADDR     ; gameboy hardware address defined in gbhw.inc
 some_value                  ; ram address or compiler variable
