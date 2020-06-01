@@ -51,25 +51,25 @@ $(OBJDIR)/%.gb: $(OBJDIR)/%.o
 	rgbfix -v -p 0 "$@"
 
 $(OBJDIR)/%.2bpp: $(OBJDIR)/%.png
-	$(info $n# formatting $< for gameboy)
+	$(info $n formatting $< for gameboy)
 	rgbgfx -o "$@" "$<"
 
 $(OBJDIR)/%.png: $(OBJDIR)/%_wfg.png
-	$(info $n# correcting white foreground of $<)
+	$(info $n correcting white foreground of $<)
 	convert "$<" -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove "$@"
 
 $(OBJDIR)/%.png: $(OBJDIR)/%_to16.png
-	$(info $n# correcting width of $<)
+	$(info $n correcting width of $<)
 	convert "$<" -sample 16 "$@"
 
 $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
-	$(info $n# stitching together frames of $< into a tall png of frames)
+	$(info $n stitching together frames of $< into a tall png of frames)
 	convert -coalesce "$<" "$(WORKDIR)/$*-%04d.png"
 	convert "$(WORKDIR)/$*-*.png" -append $@
 	rm -rf "$(WORKDIR)"
 
 $(OBJDIR)/%.2bpp: $(OBJDIR)/%_tiles.png
-	$(info $n# creating tiles and tilemap from $<)
+	$(info $n creating tiles and tilemap from $<)
 	rgbgfx -ut "$(OBJDIR)/$*.tilemap" -o "$@" "$<"
 
 .INTERMEDIATE: $(OBJDIR)/%
@@ -92,5 +92,5 @@ VPATH := $(SRCDIR) $(LIBDIR)
 # define variable $n as a newline for $(info) invocation
 define n
 
-
+#
 endef
