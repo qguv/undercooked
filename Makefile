@@ -27,13 +27,13 @@ clean:
 .PHONY: optimcheck
 optimcheck:
 	@ag '^\s*(ld\s+a,0|cp\s+0)' --ignore '*.txt' && exit 1 || exit 0
-	$(info $n# No easily optimizable statements found! Nice work!)
+	$(info $n No easily optimizable statements found! Nice work!)
 
 # ------------------------------------------------------------------------------
 #  Single-file recipes
 
 $(RELEASESDIR)/$(ROMPATH): $(OBJDIR)/main.gb | $(RELEASESDIR)
-	$(info $n# copying release build $< to $(RELEASESDIR)/)
+	$(info $n copying release build $< to $(RELEASESDIR)/)
 	cp $< $@
 
 $(OBJDIR)/main.o: $(SRCDIR)/smt.inc $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/southward.2bpp
@@ -42,36 +42,24 @@ $(OBJDIR)/main.o: $(SRCDIR)/smt.inc $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $
 #  Pattern rules
 
 $(OBJDIR)/%.o: %.asm | $(OBJDIR)
-	$(info $n# assembling $<...)
+	$(info $n assembling $<...)
 	rgbasm -v -E -o "$@" "$<"
 
 $(OBJDIR)/%.gb: $(OBJDIR)/%.o
-	$(info $n# linking $<...)
+	$(info $n linking $<...)
 	rgblink -n "$(OBJDIR)/$*.sym" -o "$@" "$<"
 	rgbfix -v -p 0 "$@"
 
-$(OBJDIR)/%.2bpp: $(SPRITEDIR)/%.png | $(OBJDIR)
-	$(info $n# formatting sprite $< for gameboy)
-	rgbgfx -o "$@" "$<"
-
 $(OBJDIR)/%.2bpp: $(OBJDIR)/%.png
-	$(info $n# formatting intermediate $< for gameboy)
+	$(info $n# formatting $< for gameboy)
 	rgbgfx -o "$@" "$<"
-
-$(OBJDIR)/%.png: $(SPRITEDIR)/%_wfg.png | $(OBJDIR)
-	$(info $n# correcting white foreground of sprite $<)
-	convert "$<" -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove "$@"
 
 $(OBJDIR)/%.png: $(OBJDIR)/%_wfg.png
-	$(info $n# correcting white foreground of intermediate $<)
+	$(info $n# correcting white foreground of $<)
 	convert "$<" -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove "$@"
 
-$(OBJDIR)/%.png: $(SPRITEDIR)/%_to16.png | $(OBJDIR)
-	$(info $n# correcting width of $<)
-	convert "$<" -sample 16 "$@"
-
 $(OBJDIR)/%.png: $(OBJDIR)/%_to16.png
-	$(info $n# correcting width of intermediate $<)
+	$(info $n# correcting width of $<)
 	convert "$<" -sample 16 "$@"
 
 $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
@@ -80,14 +68,16 @@ $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
 	convert "$(WORKDIR)/$*-*.png" -append $@
 	rm -rf "$(WORKDIR)"
 
-$(OBJDIR)/%.2bpp: $(SPRITEDIR)/%_tiles.png | $(OBJDIR)
+$(OBJDIR)/%.2bpp: $(OBJDIR)/%_tiles.png
 	$(info $n# creating tiles and tilemap from $<)
 	rgbgfx -ut "$(OBJDIR)/$*.tilemap" -o "$@" "$<"
 
-$(OBJDIR)/%.2bpp: $(OBJDIR)/%_tiles.png
-	$(info $n# creating tiles and tilemap from intermediate $<)
-	rgbgfx -ut "$(OBJDIR)/$*.tilemap" -o "$@" "$<"
+.INTERMEDIATE: $(OBJDIR)/%
+$(OBJDIR)/%: $(SPRITEDIR)/% | $(OBJDIR)
+	$(info $n retreiving sprite $<)
+	cp "$<" "$@"
 
+.INTERMEDIATE: $(WORKDIR)/$(SPRITEDIR)
 $(RELEASESDIR) $(OBJDIR) $(WORKDIR)/$(SPRITEDIR):
 	mkdir -p $@
 
