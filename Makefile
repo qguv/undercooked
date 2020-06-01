@@ -30,13 +30,19 @@ optimcheck:
 	$(info $n No easily optimizable statements found! Nice work!)
 
 # ------------------------------------------------------------------------------
-#  Single-file recipes
+# File dependencies
+
+$(OBJDIR)/main.o: \
+$(LIBDIR)/gbhw.inc $(LIBDIR)/debug.inc $(LIBDIR)/memory.asm \
+$(SRCDIR)/optim.inc $(SRCDIR)/interrupts.asm $(SRCDIR)/music.asm $(SRCDIR)/smt.inc \
+$(OBJDIR)/tileset.2bpp $(OBJDIR)/tileset.tilemap $(OBJDIR)/star.2bpp $(OBJDIR)/southward.2bpp
+
+# ------------------------------------------------------------------------------
+#  Release targets
 
 $(RELEASESDIR)/$(ROMPATH): $(OBJDIR)/main.gb | $(RELEASESDIR)
 	$(info $n copying release build $< to $(RELEASESDIR)/)
 	cp $< $@
-
-$(OBJDIR)/main.o: $(SRCDIR)/smt.inc $(OBJDIR)/star.2bpp $(OBJDIR)/tileset.2bpp $(OBJDIR)/southward.2bpp
 
 # ------------------------------------------------------------------------------
 #  Pattern rules
