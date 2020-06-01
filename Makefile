@@ -72,7 +72,6 @@ $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
 	$(info $n stitching together frames of $< into a tall png of frames)
 	convert -coalesce "$<" "$(WORKDIR)/$*-%04d.png"
 	convert "$(WORKDIR)/$*-*.png" -append $@
-	rm -rf "$(WORKDIR)"
 
 $(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap: $(OBJDIR)/%_tiles.png
 	$(info $n creating tiles and tilemap from $<)
