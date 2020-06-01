@@ -84,6 +84,10 @@ $(RELEASESDIR) $(OBJDIR) $(WORKDIR)/$(SPRITEDIR):
 # ------------------------------------------------------------------------------
 #  Make internals
 
+# echo commands prefixed with +
+SHELL = /bin/env PS4='$$ ' /bin/bash -x
+.SILENT: ;
+
 VPATH := $(SRCDIR) $(LIBDIR)
 
 # disable suffix rule interpretation
