@@ -35,7 +35,7 @@ optimcheck:
 $(OBJDIR)/main.o: \
 $(LIBDIR)/gbhw.inc $(LIBDIR)/debug.inc $(LIBDIR)/memory.asm \
 $(SRCDIR)/optim.inc $(SRCDIR)/interrupts.asm $(SRCDIR)/music.asm $(SRCDIR)/smt.inc \
-$(OBJDIR)/tileset.2bpp $(OBJDIR)/tileset.tilemap $(OBJDIR)/star.2bpp $(OBJDIR)/southward.2bpp
+$(OBJDIR)/house.2bpp $(OBJDIR)/house.tilemap $(OBJDIR)/star.2bpp $(OBJDIR)/southward.2bpp
 
 # ------------------------------------------------------------------------------
 #  Release targets
@@ -68,13 +68,20 @@ $(OBJDIR)/%.png: $(OBJDIR)/%_to16.png
 	$(info $n correcting width of $<)
 	convert "$<" -sample 16 "$@"
 
-$(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
+$(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OUTDIR)
 	$(info $n stitching together frames of $< into a tall png of frames)
-	convert -coalesce "$<" "$(WORKDIR)/$*-%04d.png"
-	convert "$(WORKDIR)/$*-*.png" -append $@
+	convert -coalesce "$<" -append "$@"
 
-$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap $(OBJDIR)/%.attrmap: $(OBJDIR)/%_tiles.png
-	$(info $n creating tiles and tilemap from $<)
+$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap: $(OBJDIR)/%_bg.png
+	$(info $n extracting unique tiles from $<)
+	rgbgfx \
+		--unique-tiles \
+		--tilemap "$(OBJDIR)/$*.tilemap" \
+		--output "$@" \
+		"$<"
+
+$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap $(OBJDIR)/%.attrmap: $(OBJDIR)/%_sprite.png
+	$(info $n extracting unique tiles from $< and writing mirror flags)
 	rgbgfx \
 		--mirror-tiles \
 		--tilemap "$(OBJDIR)/$*.tilemap" \
@@ -87,7 +94,6 @@ $(OBJDIR)/%: $(SPRITEDIR)/% | $(OBJDIR)
 	$(info $n retreiving sprite $<)
 	cp "$<" "$@"
 
-.INTERMEDIATE: $(WORKDIR)/$(SPRITEDIR)
 $(RELEASESDIR) $(OBJDIR) $(WORKDIR)/$(SPRITEDIR):
 	mkdir -p $@
 

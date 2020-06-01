@@ -43,7 +43,7 @@ TILE_NUM set TILE_NUM + (TILE_NUM % 2)
 endc
 	endm
 
-Tileset: incbin "obj/tileset.2bpp"
+Tileset: incbin "obj/house.2bpp"
 	registertiles	Tileset,$a1,1
 
 ; the tile indices of all the tiles you should be able to walk on
@@ -54,7 +54,7 @@ nonlava:
 	db	$63, $74, $86, $a0				; carpet, right edge
 nonlava_end:
 
-Tilemap: incbin "obj/tileset.tilemap"
+Tilemap: incbin "obj/house.tilemap"
 TilemapEnd:
 
 Blacktile:
