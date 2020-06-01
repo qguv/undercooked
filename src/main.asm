@@ -85,15 +85,23 @@ StarAnimTab:
 	db StarBeginIndex+6
 	db StarBeginIndex+7
 
+SouthwardEarAnimTab:
+	db SouthwardBeginIndex+0
+	db SouthwardBeginIndex+4
+
+SouthwardHeadAnimTab:
+	db SouthwardBeginIndex+1
+	db SouthwardBeginIndex+5
+
 SouthwardArmAnimTab:
 	db SouthwardBeginIndex+2
 	db SouthwardBeginIndex+4
 	db SouthwardBeginIndex+2
-	db SouthwardBeginIndex+6
+	db SouthwardBeginIndex+4
 
 SouthwardLegAnimTab:
 	db SouthwardBeginIndex+3
-	db SouthwardBeginIndex+5
+	db SouthwardBeginIndex+7
 	db SouthwardBeginIndex+3
 	db SouthwardBeginIndex+7
 
@@ -102,14 +110,14 @@ SMT_ROM:
 	AnimSprite rstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$6d,$2e,OAMF_XFLIP,8,2,4,StarAnimTab
 
 	; cat facing southward
-	StaticSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$50,$4e,0
-	StaticSprite neckl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$50,$56,0
-	StaticSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+0,$58,$4e,OAMF_XFLIP
-	StaticSprite neckr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,SouthwardBeginIndex+1,$58,$56,OAMF_XFLIP
-	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,8,0,SouthwardArmAnimTab
-	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,8,0,SouthwardLegAnimTab
-	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,OAMF_XFLIP,4,8,2,SouthwardArmAnimTab
-	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,OAMF_XFLIP,4,8,2,SouthwardLegAnimTab
+	AnimSprite earsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$4e,0,2,7,0,SouthwardArmAnimTab
+	AnimSprite earsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$4e,OAMF_XFLIP,2,7,0,SouthwardArmAnimTab
+	AnimSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,0,2,7,0,SouthwardLegAnimTab
+	AnimSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,OAMF_XFLIP,2,7,0,SouthwardLegAnimTab
+	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,7,0,SouthwardArmAnimTab
+	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$57,$5e,OAMF_XFLIP,4,7,2,SouthwardArmAnimTab
+	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,7,0,SouthwardLegAnimTab
+	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$57,$66,OAMF_XFLIP,4,7,2,SouthwardLegAnimTab
 
 ;---------------,
 ; Allocated RAM ;
