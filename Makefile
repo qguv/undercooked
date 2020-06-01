@@ -74,7 +74,7 @@ $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
 	convert "$(WORKDIR)/$*-*.png" -append $@
 	rm -rf "$(WORKDIR)"
 
-$(OBJDIR)/%.2bpp: $(OBJDIR)/%_tiles.png
+$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap: $(OBJDIR)/%_tiles.png
 	$(info $n creating tiles and tilemap from $<)
 	rgbgfx -ut "$(OBJDIR)/$*.tilemap" -o "$@" "$<"
 
