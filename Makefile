@@ -3,7 +3,7 @@ OBJDIR := obj
 SPRITEDIR := art
 RELEASESDIR := releases
 LIBDIR := lib
-WORKDIR := tmp_$(shell date +%s)
+WORKDIR := tmp/$(shell date +%s)
 ROMPATH := undercooked_$(shell git describe --tags --dirty).gb
 EMULATOR := bgb -nobatt -watch
 
