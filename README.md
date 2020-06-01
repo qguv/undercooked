@@ -15,7 +15,7 @@ A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later mode
 ## building
 
 1. install rgbds and imagemagick
-2. `make`, this will produce `undercooked_xyz.gb` where `xyz` is the version
+2. `make -j8`, this will produce `releases/undercooked_xyz.gb` where `xyz` is the version
 
 ## playing
 
