@@ -73,9 +73,14 @@ $(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR) $(WORKDIR)/$(SPRITEDIR)
 	convert -coalesce "$<" "$(WORKDIR)/$*-%04d.png"
 	convert "$(WORKDIR)/$*-*.png" -append $@
 
-$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap: $(OBJDIR)/%_tiles.png
+$(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap $(OBJDIR)/%.attrmap: $(OBJDIR)/%_tiles.png
 	$(info $n creating tiles and tilemap from $<)
-	rgbgfx -ut "$(OBJDIR)/$*.tilemap" -o "$@" "$<"
+	rgbgfx \
+		--mirror-tiles \
+		--tilemap "$(OBJDIR)/$*.tilemap" \
+		--attr-map "$(OBJDIR)/$*.attrmap" \
+		--output "$@" \
+		"$<"
 
 .INTERMEDIATE: $(OBJDIR)/%
 $(OBJDIR)/%: $(SPRITEDIR)/% | $(OBJDIR)
