@@ -21,7 +21,7 @@ SPRITE_NUM set 0
 ; \2: SMT flags: `SMTF_ACTIVE`, `SMTF_{WORLD,SCREEN}_FIXED`
 ; \3: x position
 ; \4: y position
-; \5: flags
+; \5: flag table address
 ; \6: (animated) number of frames
 ; \7: (animated) speed (in number of vblank interrupts to stall)
 ; \8: (animated) table index to start on
@@ -43,36 +43,13 @@ endc
 	db	(\6)		; (byte 2) animation table length
 	db	(\8)		; (byte 3) current/initial animation table index
 	dw	(\9)		; (byte 4-5) animation table address
-	db	(\4)		; (byte 6, ROM only) y
-	db	(\3)		; (byte 7, ROM only) x
-	db	0		; (byte 8, ROM only) current/initial tile
-	db	(\5)		; (byte 9, ROM only) flags
+	dw	(\5)		; (byte 6-7) flag table address
+	db	(\4)		; (byte 8, ROM only) y
+	db	(\3)		; (byte 9, ROM only) x
+	db	0		; (byte 10, ROM only) current/initial tile
 	endm
 
-; arguments:
-; \1: name of sprite, an index of which will be defined for you
-; \2: SMT flags: `SMTF_ACTIVE`, `SMTF_{WORLD,SCREEN}_FIXED`
-; \3: initial tile
-; \4: x position
-; \5: y position
-; \6: flags
-StaticSprite: macro
-	; define sprite name
-\1 equ SPRITE_NUM
-SPRITE_NUM set SPRITE_NUM + 1
-
-	; entries in SMT
-	db	(\2)			; (byte 0 bit 0) `SMTF_ACTIVE` (when set)
-					; (byte 0 bit 1) `SMTF_WORLD_FIXED` (when set) or `SMTF_SCREEN_FIXED` (when clear)
-					; (byte 0 bit 2) `SMTF_ANIMATED` (when set)
-	db	0,0,0,0,0
-	db	(\5)		; (byte 6, ROM only) y
-	db	(\4)		; (byte 7, ROM only) x
-	db	(\3)		; (byte 8, ROM only) current/initial tile
-	db	(\6)		; (byte 9, ROM only) flags
-	endm
-
-SMT_RAM_BYTES equ 6
-SMT_ROM_BYTES equ 10
+SMT_RAM_BYTES equ 7
+SMT_ROM_BYTES equ 11
 
 ; vim: se ft=rgbds:

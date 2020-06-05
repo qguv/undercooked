@@ -85,6 +85,12 @@ StarAnimTab:
 	db StarBeginIndex+6
 	db StarBeginIndex+7
 
+LStarAttrTab:
+	db 0,0,0,0,0,0,0,0
+
+RStarAttrTab:
+	db OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP
+
 SouthwardEarAnimTab:
 	db SouthwardBeginIndex+0
 	db SouthwardBeginIndex+4
@@ -92,6 +98,14 @@ SouthwardEarAnimTab:
 SouthwardHeadAnimTab:
 	db SouthwardBeginIndex+1
 	db SouthwardBeginIndex+5
+
+SouthwardREarAttrTab:
+SouthwardRHeadAttrTab:
+	db OAMF_XFLIP,OAMF_XFLIP
+
+SouthwardLEarAttrTab:
+SouthwardLHeadAttrTab:
+	db 0,0
 
 SouthwardArmAnimTab:
 	db SouthwardBeginIndex+2
@@ -105,19 +119,27 @@ SouthwardLegAnimTab:
 	db SouthwardBeginIndex+3
 	db SouthwardBeginIndex+9
 
+SouthwardLArmAttrTab:
+SouthwardLLegAttrTab:
+	db 0,0,0,OAMF_XFLIP
+
+SouthwardRArmAttrTab:
+SouthwardRLegAttrTab:
+	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
+
 SMT_ROM:
-	AnimSprite lstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$5d,$2e,0,8,2,0,StarAnimTab
-	AnimSprite rstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$6d,$2e,OAMF_XFLIP,8,2,4,StarAnimTab
+	AnimSprite lstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$5d,$2e,LStarAttrTab,8,2,0,StarAnimTab
+	AnimSprite rstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$6d,$2e,RStarAttrTab,8,2,4,StarAnimTab
 
 	; cat facing southward
-	AnimSprite earsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$4e,0,2,8,0,SouthwardEarAnimTab
-	AnimSprite earsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$4e,OAMF_XFLIP,2,8,0,SouthwardEarAnimTab
-	AnimSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,0,2,8,0,SouthwardHeadAnimTab
-	AnimSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$56,OAMF_XFLIP,2,8,0,SouthwardHeadAnimTab
-	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,0,4,8,0,SouthwardArmAnimTab
-	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,OAMF_XFLIP,4,8,2,SouthwardArmAnimTab
-	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,0,4,8,0,SouthwardLegAnimTab
-	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,OAMF_XFLIP,4,8,2,SouthwardLegAnimTab
+	AnimSprite earsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$4e,SouthwardLEarAttrTab,2,8,0,SouthwardEarAnimTab
+	AnimSprite earsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$4e,SouthwardREarAttrTab,2,8,0,SouthwardEarAnimTab
+	AnimSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,SouthwardLHeadAttrTab,2,8,0,SouthwardHeadAnimTab
+	AnimSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$56,SouthwardRHeadAttrTab,2,8,0,SouthwardHeadAnimTab
+	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,SouthwardLArmAttrTab,4,8,0,SouthwardArmAnimTab
+	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,SouthwardRArmAttrTab,4,8,2,SouthwardArmAnimTab
+	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,SouthwardLLegAttrTab,4,8,0,SouthwardLegAnimTab
+	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,SouthwardRLegAttrTab,4,8,2,SouthwardLegAnimTab
 
 ;---------------,
 ; Allocated RAM ;
