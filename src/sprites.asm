@@ -62,11 +62,13 @@ AdvanceAnimation__a:
 	addhla
 	dec	d
 	jp	nz,.loop
-	ld	bc,_OAMRAM	; bc <- OAM[i]
+	ld	bc,_OAMRAM	; bc <- OAM[i].tile
 	ld	a,c
 	sla	a
 	sla	a
 	addbca
+	inc bc
+	inc bc
 
 	inc	hl		; d <- (byte 1 low nybble) animation stall amount
 	ld	a,[hl]
