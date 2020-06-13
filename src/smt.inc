@@ -46,10 +46,9 @@ endc
 	dw	(\5)		; (byte 6-7) flag table address
 	db	(\4)		; (byte 8, ROM only) y
 	db	(\3)		; (byte 9, ROM only) x
-	db	0		; (byte 10, ROM only) current/initial tile
 	endm
 
-SMT_RAM_BYTES equ 7
-SMT_ROM_BYTES equ 11
+SMT_RAM_BYTES equ 8
+SMT_ROM_BYTES equ 10
 
 ; vim: se ft=rgbds:
