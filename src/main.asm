@@ -293,16 +293,22 @@ endr
 	ld	bc,SMT_RAM
 	ld	de,_OAMRAM
 .smt_row
-rept 6				; bytes 0-5 go to SMT RAM
+rept SMT_RAM_BYTES		; bytes 0-7 go to SMT RAM
 	ld	a,[hl+]
 	ld	[bc],a
 	inc	bc
 endr
-rept 4				; bytes 6-9 go to OAM RAM
+rept 2				; bytes 8-10 go to OAM RAM
 	ld	a,[hl+]
 	ld	[de],a
 	inc	de
 endr
+	ld	a,$69
+	ld	[de],a
+	inc	de
+	ld	a,%01000000
+	ld	[de],a
+	inc	de
 	ld	a,[spr_index]
 	dec	a
 	ld	[spr_index],a
