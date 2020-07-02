@@ -1,6 +1,10 @@
 # undercooked
 
-A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too.
+A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too. Forever free and open source.
+
+<img src="https://raw.githubusercontent.com/qguv/undercooked/master/art/title.png" /></a>
+
+[Play undercooked v0.0.4 now in your browser](https://qguv.github.io/undercooked/play/0.0.4.html), or [download the ROM](https://github.com/qguv/undercooked/releases/download/v0.0.4/undercooked_v0.0.4.gb) to play in an emulator or burn onto a Gameboy cartridge!
 
 ## credits
 
