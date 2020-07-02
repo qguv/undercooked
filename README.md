@@ -51,3 +51,15 @@ as3_freq                    ; music frequency (16-bit)
 as3                         ; music note (8-bit index into NoteFreqs)
 SOME_CONSTANT               ; equ-defined constant
 ```
+
+## releasing
+
+1. update the wasmboy and ROM links in README for the new version
+2. create a new tag `vX.Y.Z`
+3. build the project
+4. push the tag to github
+5. make a github release
+6. upload the generated `releases/undercooked_vX.Y.Z` file as a release asset
+7. add the ROM to the `gh-pages` branch
+8. template and commit an embed page for this version
+9. commit and push `gh-pages` updates
