@@ -10,7 +10,7 @@ ldz: macro
 	xor	a
 	endm
 
-; 'addhla' adds a to hl (5 bytes, 5 cycles). Beats three or more repeated `inc hl`.
+; 'addhla' adds `a` to `hl`, clobbering `a` (5 bytes, 5 cycles). Beats three or more repeated `inc hl`.
 addhla: macro
 	add	a,l
 	ld	l,a
@@ -19,7 +19,7 @@ addhla: macro
 	ld	h,a
 	endm
 
-; 'addbca' adds a to bc, (5 bytes, 5 cycles). Beats three or more repeated `inc bc`.
+; 'addbca' adds `a` to `bc`, clobbering `a` (5 bytes, 5 cycles). Beats three or more repeated `inc bc`.
 addbca: macro
 	add	a,c
 	ld	c,a
@@ -28,7 +28,7 @@ addbca: macro
 	ld	b,a
 	endm
 
-; 'adddea' adds a to de, (5 bytes, 5 cycles). Beats three or more repeated `inc de`.
+; 'adddea' adds `a` to `de`, clobbering `a` (5 bytes, 5 cycles). Beats three or more repeated `inc de`.
 adddea: macro
 	add	a,e
 	ld	e,a

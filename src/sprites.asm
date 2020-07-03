@@ -95,7 +95,7 @@ SpriteUpdate__a:
 	ld	a,c
 	call	nz,SpriteFollowBackground__a
 	pop	bc
-	ld	a,b			; if (SMT[sprite_index].animated) { return AdvanceAnimation(sprite_index); } (byte 0 bit 2)
+	ld	a,b			; if (SMT[sprite_index].animated) { return SpriteAnimate(sprite_index); } (byte 0 bit 2)
 	and	SMTF_ANIMATED
 	ld	a,c
 	jp	nz,SpriteAnimate__a
@@ -110,6 +110,7 @@ SpriteFollowBackground__a:
 	addbca
 	ld	a,[dy]		; d <- dy
 	ld	d,a
+	; FIXME suspicious OOB VRAM access @ FE00-FE05 breaking sprites 0 and 1
 	ld	a,[bc]		; _OAMRAM[sprite index].y -= dy
 	sub	d
 	ld	[bc],a
@@ -118,11 +119,11 @@ SpriteFollowBackground__a:
 	ld	d,a
 	ld	a,[bc]		; _OAMRAM[sprite index].x -= dx
 	sub	d
+	; FIXME suspicious OOB VRAM access @ FE00-FE05 breaking sprites 0 and 1
 	ld	[bc],a
 	ret
 
-; Update each sprite's animation counters in its (RAM) SMT state.
-; FIXME don't update OAM, just call SpriteRecalculate__a after updating the SMT.
+; Update a sprite's animation counters in its (RAM) SMT state and update tile index and attributes in OAM.
 ; arg a: sprite index in RAM SMT
 SpriteAnimate__a:
 	ld	c,a		; c <- i
@@ -160,7 +161,8 @@ SpriteAnimate__a:
 	ld	[hl+],a		; stall counter and stall amount -> (byte 1)
 	ld	a,[hl+]		; (byte 2) anim table length -> d
 	ld	d,a
-	ld	a,[hl]		; (byte 3) current anim table index -> a
+	;			; hl <- &SMT[i][3]
+	ld	a,[hl]		; a <- (byte 3) current anim table index
 	inc	a		; a++
 	cp	d		; if current tile + 1 == length...
 	jp	nz,.no_reset_animation
