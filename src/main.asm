@@ -325,7 +325,6 @@ endr
 .wait
 	; wait for vblank
 	halt
-	nop
 	jp	.wait
 
 StopLCD:
