@@ -1,10 +1,10 @@
 AnimateSprites:
 	ld	a,SPRITE_NUM
 .loop
-	push	af			; stack <- sprite_index
-	call UpdateSprite__a		; UpdateSprite(sprite_index)
-	pop	af			; (sprite_index <- stack)--;
 	dec	a
+	push	af			; stack <- sprite_index
+	call	UpdateSprite__a		; UpdateSprite(sprite_index)
+	pop	af			; (sprite_index <- stack)--;
 	jp	nz,.loop
 
 ; arg a: sprite index in RAM SMT
