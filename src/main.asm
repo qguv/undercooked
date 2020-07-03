@@ -297,16 +297,15 @@ rept 2				; bytes 8-10 go to OAM RAM
 	ld	[de],a
 	inc	de
 endr
-	ld	a,$69
-	ld	[de],a
-	inc	de
-	ld	a,%01000000
-	ld	[de],a
-	inc	de
+	inc	de		; don't set OAM tile yet
+	inc	de		; don't set OAM attribute yet
+
 	ld	a,[spr_index]
 	dec	a
 	ld	[spr_index],a
 	jp	nz,.smt_row		; ...and loop if there's more sprites to process
+
+	call	AnimateSprites		; init sprite animation
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
 	; turn LCD on
@@ -544,8 +543,6 @@ endr
 	add	b		; rSCY + dy -> a
 	ld	[rSCY],a	; rSCY += dy
 .end_movement
-
-	call AnimateSprites
 
 HandleNotes:
 	ld	a,[note_dur]		; if duration of previous note is expired, continue
