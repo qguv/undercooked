@@ -68,9 +68,13 @@ $(OBJDIR)/%.png: $(OBJDIR)/%_to16.png
 	$(info $n correcting width of $<)
 	convert "$<" -sample 16 "$@"
 
-$(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OUTDIR)
+$(OBJDIR)/%.png: $(SPRITEDIR)/%.gif | $(OBJDIR)
 	$(info $n stitching together frames of $< into a tall png of frames)
-	convert -coalesce "$<" -append "$@"
+	convert -coalesce '$<' -append '$@'
+
+$(OBJDIR)/%.nframes: $(SPRITEDIR)/%.gif | $(OBJDIR)
+	$(info $n counting frames of $< into $@)
+	printf '\x'"$$(printf '%02d\n' "$$(identify -format '%n\n' '$<' | head -n 1)")" > '$@'
 
 $(OBJDIR)/%.2bpp $(OBJDIR)/%.tilemap: $(OBJDIR)/%_bg.png
 	$(info $n extracting unique tiles from $<)
