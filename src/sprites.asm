@@ -54,22 +54,21 @@ PositionUpdate__a:
 
 ; arg a: sprite index in RAM SMT
 AdvanceAnimation__a:
-	ld	c,a
-	ld	d,a
-	ld	hl,SMT_RAM	; hl <- SMT[i]
+	ld	c,a		; c <- i
+	ld	d,a		; d <- i
+	ld	hl,SMT_RAM	; hl <- &SMT[i]
 .loop
 	ld	a,SMT_RAM_BYTES
 	addhla
 	dec	d
 	jp	nz,.loop
-	ld	bc,_OAMRAM	; bc <- OAM[i].tile
+	ld	bc,_OAMRAM	; bc <- &OAM[i].tile
 	ld	a,c
 	sla	a
 	sla	a
+	inc	a
+	inc	a
 	addbca
-	inc bc
-	inc bc
-
 	inc	hl		; d <- (byte 1 low nybble) animation stall amount
 	ld	a,[hl]
 	and	$0f

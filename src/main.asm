@@ -377,6 +377,7 @@ endr
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
 
+; TODO start using linker for these to avoid including unneeded subroutines
 include "src/tiles.asm"
 include "src/sprites.asm"
 
