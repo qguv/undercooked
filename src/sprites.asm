@@ -8,7 +8,7 @@ SpriteRecalculate__a:
 	inc	a
 	inc	a
 	addhla
-	push	hl			; save &OAMRAM[sprite_index]
+	push	hl			; save &OAMRAM[sprite_index].tile_id
 	ld	hl,SMT_RAM		; hl <- &SMT[sprite_index]
 	ld	a,b
 if SMT_RAM_BYTES == 8
@@ -45,11 +45,11 @@ endr
 	ld	a,[bc]			; d <- flag_table[anim_counter]
 	ld	d,a
 	pop	hl			; hl <- &OAMRAM[sprite_index].tile_id
-	ld	a,e			; OAMRAM[sprite_index].tile_id <- anim_table[anim_counter]
-	ld	[hl+],a
+	ld	[hl],e			; OAMRAM[sprite_index].tile_id <- anim_table[anim_counter]
+	; GAMEBOY OAM HARDWARE BUG WORKAROUND: we can't use ldi/ldd/inc r16/dec r16
+	inc_hl_safe			; OAMRAM[sprite_index].attrs <- anim_table[anim_counter]
 	;				; hl <- &OAMRAM[sprite_index].attrs
-	ld	a,d			; OAMRAM[sprite_index].attrs <- flag_table[anim_counter]
-	ld	[hl],a
+	ld	[hl],d			; OAMRAM[sprite_index].attrs <- flag_table[anim_counter]
 	ret
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.

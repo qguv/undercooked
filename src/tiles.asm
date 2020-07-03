@@ -151,8 +151,7 @@ ShowBlankTiles__a:
 	ld	hl,_SCRN0
 	addhla
 rept LEVEL_HEIGHT
-	ld	a,BlacktileBeginIndex
-	ld	[hl],a
+	ld	[hl],BlacktileBeginIndex
 	ld	a,$20
 	addhla
 endr
