@@ -24,9 +24,9 @@ endr
 	addhla
 	; push	hl
 	; pop	hl
-	ld	a,[hl]			; d <- SMT[sprite_index].anim_counter
+	ld	a,[hl+]			; d <- SMT[sprite_index].anim_counter
 	ld	d,a
-	inc	hl			; hl <- &SMT[sprite_index].anim_table_address
+	;				; hl <- &SMT[sprite_index].anim_table_address
 	ld	a,[hl+]			; bc <- &anim_table
 	ld	c,a
 	ld	a,[hl+]

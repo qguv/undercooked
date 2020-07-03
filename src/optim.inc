@@ -10,7 +10,7 @@ ldz: macro
 	xor	a
 	endm
 
-; 'addhla' adds a to hl, 20 cycles. Not worth it for immediates; just use repeated `inc hl` for values under 10.
+; 'addhla' adds a to hl (5 bytes, 5 cycles). Beats three or more repeated `inc hl`.
 addhla: macro
 	add	a,l
 	ld	l,a
@@ -19,7 +19,7 @@ addhla: macro
 	ld	h,a
 	endm
 
-; 'addbca' adds a to bc, 20 cycles. Not worth it for immediates; just use repeated `inc bc` for values under 10.
+; 'addbca' adds a to bc, (5 bytes, 5 cycles). Beats three or more repeated `inc bc`.
 addbca: macro
 	add	a,c
 	ld	c,a
@@ -28,7 +28,7 @@ addbca: macro
 	ld	b,a
 	endm
 
-; 'adddea' adds a to de, 20 cycles. Not worth it for immediates; just use repeated `inc de` for values under 10.
+; 'adddea' adds a to de, (5 bytes, 5 cycles). Beats three or more repeated `inc de`.
 adddea: macro
 	add	a,e
 	ld	e,a
