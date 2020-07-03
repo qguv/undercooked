@@ -47,6 +47,7 @@ endr
 	jp	z,UnloadTilesR
 	ret
 
+; load another column of tiles to the left of the last left-loaded column
 ShowTilesR:
 	ld	a,[vram_ringr]	; rightmost loaded column++ mod SCRN_VX_B
 	inc	a
@@ -66,6 +67,7 @@ ShowTilesR:
 	jp	ShowRealTiles__ab
 	;ret
 
+; load another column of tiles to the left of the last left-loaded column
 ShowTilesL:
 	ld	a,[vram_ringl]	; leftmost loaded column-- mod SCRN_VX_B
 	add	SCRN_VX_B - 1
