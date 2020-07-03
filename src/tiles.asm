@@ -13,8 +13,8 @@ CheckShowTilesR:
 rept 3
 	srl	a
 endr
-	add	SCREEN_WIDTH
-	and	VRAM_WIDTH - 1
+	add	SCRN_X_B
+	and	SCRN_VX_B - 1
 	ld	b,a
 	ld	a,[vram_ringr]	; if (rightmost loaded column != about-to-be-seen rightmost column) { return; }
 	cp	b
@@ -33,8 +33,8 @@ CheckShowTilesL:
 rept 3
 	srl	a
 endr
-	add	VRAM_WIDTH - 1
-	and	VRAM_WIDTH - 1
+	add	SCRN_VX_B - 1
+	and	SCRN_VX_B - 1
 	ld	b,a
 	ld	a,[vram_ringl]	; if (leftmost loaded column != about-to-be-seen leftmost column) { return; }
 	cp	b
@@ -48,9 +48,9 @@ endr
 	ret
 
 ShowTilesR:
-	ld	a,[vram_ringr]	; rightmost loaded column++ mod VRAM_WIDTH
+	ld	a,[vram_ringr]	; rightmost loaded column++ mod SCRN_VX_B
 	inc	a
-	and	VRAM_WIDTH - 1
+	and	SCRN_VX_B - 1
 	ld	[vram_ringr],a
 	ld	a,[maploadr]	; rightmost loaded map position++
 	inc	a
@@ -67,9 +67,9 @@ ShowTilesR:
 	;ret
 
 ShowTilesL:
-	ld	a,[vram_ringl]	; leftmost loaded column-- mod VRAM_WIDTH
-	add	VRAM_WIDTH - 1
-	and	VRAM_WIDTH - 1
+	ld	a,[vram_ringl]	; leftmost loaded column-- mod SCRN_VX_B
+	add	SCRN_VX_B - 1
+	and	SCRN_VX_B - 1
 	ld	[vram_ringl],a
 	ld	a,[maploadl]	; leftmost loaded map position--
 	dec	a
@@ -105,9 +105,9 @@ UpdateLeftOob:
 	ret
 
 UnloadTilesL:
-	ld	a,[vram_ringl]	; vram_ringl++ mod VRAM_WIDTH
+	ld	a,[vram_ringl]	; vram_ringl++ mod SCRN_VX_B
 	inc	a
-	and	VRAM_WIDTH - 1
+	and	SCRN_VX_B - 1
 	ld	[vram_ringl],a
 	ld	a,[maploadl]	; maploadl++
 	inc	a
@@ -120,9 +120,9 @@ UnloadTilesL:
 	ret
 
 UnloadTilesR:
-	ld	a,[vram_ringr]	; vram_ringr-- mod VRAM_WIDTH
-	add	VRAM_WIDTH - 1
-	and	VRAM_WIDTH - 1
+	ld	a,[vram_ringr]	; vram_ringr-- mod SCRN_VX_B
+	add	SCRN_VX_B - 1
+	and	SCRN_VX_B - 1
 	ld	[vram_ringr],a
 	ld	a,[maploadr]	; maploadr--
 	dec	a
@@ -169,7 +169,7 @@ rept LEVEL_HEIGHT
 	ld	[de],a
 	ld	a,LEVEL_WIDTH		; hl += world_width
 	addhla
-	ld	a,$20			; de += vram_width
+	ld	a,SCRN_VX_B		; de += SCRN_VX_B
 	adddea
 endr
 	ret

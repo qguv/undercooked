@@ -13,10 +13,6 @@ section "Org $100",ROM0[$100]
 include "lib/memory.asm"
 include "src/music.asm"
 
-; TODO use hw constants instead
-VRAM_WIDTH equ $20
-SCREEN_WIDTH equ 20
-
 ;------------------------,
 ; Configurable constants ;
 ;________________________'
@@ -272,11 +268,11 @@ endc
 	jp	nz,.loop
 
 ; load initial screen of tiles
-	ld	a,VRAM_WIDTH - 1
+	ld	a,SCRN_VX_B - 1
 	ld	[vram_ringr],a
 	ld	a,$ff
 	ld	[maploadr],a
-rept SCREEN_WIDTH + 1
+rept SCRN_X_B + 1
 	call ShowTilesR
 endr
 
