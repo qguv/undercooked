@@ -13,11 +13,11 @@ EMULATOR := bgb -nobatt -watch
 
 .PHONY: play
 play: $(OBJDIR)/main.gb
-	$(EMULATOR) "$<"
+	nohup $(EMULATOR) "$<" >/dev/null &
 
 .PHONY: debug
 debug: $(OBJDIR)/main.gb
-	$(EMULATOR) -setting StartDebug=1 "$<"
+	nohup $(EMULATOR) -setting StartDebug=1 "$<" >/dev/null &
 
 .PHONY: clean
 clean:
