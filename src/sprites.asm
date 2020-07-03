@@ -1,6 +1,6 @@
-; Set the OAM tile index and attributes from its (RAM) SMT state.
+; Set a sprite's OAM tile index and attributes from its (RAM) SMT state.
 ; arg a: sprite index in RAM SMT
-SpriteSet__a:
+SpriteRecalculate__a:
 	ld	b,a			; b <- sprite index
 	ld	hl,_OAMRAM		; hl <- &OAMRAM[sprite_index].tile_id
 	sla	a
@@ -16,7 +16,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteSet__a in src/sprites.asm no longer applies!"
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprites.asm no longer applies!"
 endc
 rept 3					; hl <- &SMT[sprite_index].anim_counter
 	inc	a
@@ -52,17 +52,31 @@ endr
 	ld	[hl],a
 	ret
 
-AnimateSprites:
+; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
+SpriteRecalculateAll:
 	ld	a,SPRITE_NUM
 .loop
 	dec	a
-	push	af			; stack <- sprite_index
-	call	UpdateSprite__a		; UpdateSprite(sprite_index)
-	pop	af			; (sprite_index <- stack)--;
+	push	af
+	call	SpriteRecalculate__a
+	pop	af
 	jp	nz,.loop
+	ret
 
+; Update each sprite's animation, then update OAM RAM with its new position, animation frame, and flags. Call this every VBLANK.
+SpriteUpdateAll:
+	ld	a,SPRITE_NUM
+.loop
+	dec	a
+	push	af
+	call	SpriteUpdate__a
+	pop	af
+	jp	nz,.loop
+	ret
+
+; Update a sprite's animation, then update OAM RAM with its new position, animation frame, and flags.
 ; arg a: sprite index in RAM SMT
-UpdateSprite__a:
+SpriteUpdate__a:
 	ld	c,a			; c <- sprite index
 	ld	d,a			; hl <- SMT[sprite_index]
 	ld	hl,SMT_RAM
@@ -79,16 +93,17 @@ UpdateSprite__a:
 	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { PositionUpdate(sprite_index <- c); } (byte 0 bit 1)
 	and	SMTF_WORLD_FIXED
 	ld	a,c
-	call	nz,PositionUpdate__a
+	call	nz,SpriteFollowBackground__a
 	pop	bc
 	ld	a,b			; if (SMT[sprite_index].animated) { return AdvanceAnimation(sprite_index); } (byte 0 bit 2)
 	and	SMTF_ANIMATED
 	ld	a,c
-	jp	nz,AdvanceAnimation__a
+	jp	nz,SpriteAnimate__a
 	ret
 
+; Update a sprite's OAM position so it remains fixed to its position in the background.
 ; arg a: sprite index in RAM SMT
-PositionUpdate__a:
+SpriteFollowBackground__a:
 	ld	bc,_OAMRAM	; bc <- _OAMRAM[sprite index].y
 	sla	a
 	sla	a
@@ -106,9 +121,10 @@ PositionUpdate__a:
 	ld	[bc],a
 	ret
 
+; Update each sprite's animation counters in its (RAM) SMT state.
+; FIXME don't update OAM, just call SpriteRecalculate__a after updating the SMT.
 ; arg a: sprite index in RAM SMT
-; FIXME don't update OAM, just call SpriteSet__a after updating the SMT
-AdvanceAnimation__a:
+SpriteAnimate__a:
 	ld	c,a		; c <- i
 	ld	d,a		; d <- i
 	ld	hl,SMT_RAM	; hl <- &SMT[i]

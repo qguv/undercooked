@@ -303,9 +303,9 @@ endr
 	ld	a,[spr_index]
 	dec	a
 	ld	[spr_index],a
-	jp	nz,.smt_row		; ...and loop if there's more sprites to process
+	jp	nz,.smt_row	; ...and loop if there's more sprites to process
 
-	call	AnimateSprites		; init sprite animation
+	call	SpriteRecalculateAll	; set OAM tile id and attributes from SMT
 
 	ld	a,LCDCF_ON | LCDCF_BG8000 | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJ8 | LCDCF_OBJON
 	; turn LCD on
@@ -543,6 +543,8 @@ endr
 	add	b		; rSCY + dy -> a
 	ld	[rSCY],a	; rSCY += dy
 .end_movement
+
+	call SpriteUpdateAll
 
 HandleNotes:
 	ld	a,[note_dur]		; if duration of previous note is expired, continue
