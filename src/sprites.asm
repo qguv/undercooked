@@ -77,14 +77,19 @@ SpriteUpdateAll:
 ; Update a sprite's animation, then update OAM RAM with its new position, animation frame, and flags.
 ; arg a: sprite index in RAM SMT
 SpriteUpdate__a:
-	ld	c,a			; c <- sprite index
-	ld	d,a			; hl <- SMT[sprite_index]
-	ld	hl,SMT_RAM
-.loop
+	ld	c,a			; c <- i
+	ld	hl,SMT_RAM		; hl <- &SMT[i]
+	cpz
+	jp	z,.got_smt_entry
+.next_smt_entry
+	ld	d,a
 	ld	a,SMT_RAM_BYTES
 	addhla
-	dec	d
-	jp	nz,.loop
+	ld	a,d
+	dec	a
+	cpz
+	jp	nz,.next_smt_entry
+.got_smt_entry
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
 	ld	b,a
 	push	bc
@@ -126,40 +131,34 @@ SpriteFollowBackground__a:
 ; Update a sprite's animation counters in its (RAM) SMT state and update tile index and attributes in OAM.
 ; arg a: sprite index in RAM SMT
 SpriteAnimate__a:
+	ld	b,a		; b <- i
 	ld	c,a		; c <- i
-	ld	d,a		; d <- i
 	ld	hl,SMT_RAM	; hl <- &SMT[i]
 .loop
 	ld	a,SMT_RAM_BYTES
 	addhla
-	dec	d
+	dec	b
 	jp	nz,.loop
-	ld	bc,_OAMRAM	; bc <- &OAM[i].tile
-	ld	a,c
-	sla	a
-	sla	a
-	inc	a
-	inc	a
-	addbca
-	inc	hl		; d <- (byte 1 low nybble) animation stall amount
-	ld	a,[hl]
+	inc	hl		; hl <- &SMT[i][1]
+	ld	a,[hl]		; b <- (byte 1 low nybble) animation stall amount
 	and	$0f
-	ld	d,a
-	ld	a,[hl]		; (byte 1 high nybble) animation stall counter -> a
+	ld	b,a
+	ld	a,[hl]		; a <- (byte 1 high nybble) animation stall counter
 	swap	a
 	and	$0f
 	jp	z,.stall_complete	; we animate only when the counter reaches zero
 	dec	a		; decrease the animation stall counter
 	swap	a		; combine the two nybbles
-	or	d
-	ld	[hl+],a		; write back to the RAM SMT
+	or	b
+	ld	[hl],a		; write back to the RAM SMT
 	ret
 .stall_complete
-	ld	a,d		; reset the stall counter to the stall amount
+	ld	a,b		; reset the stall counter to the stall amount
 	swap	a		; combine the two nybbles
-	or	d
-	ld	[hl+],a		; stall counter and stall amount -> (byte 1)
-	ld	a,[hl+]		; (byte 2) anim table length -> d
+	or	b
+	ld	[hl+],a		; (byte 1) <- stall counter and stall amount
+	;			; hl <- &SMT[i][2]
+	ld	a,[hl+]		; d <- (byte 2) anim table length
 	ld	d,a
 	;			; hl <- &SMT[i][3]
 	ld	a,[hl]		; a <- (byte 3) current anim table index
@@ -168,23 +167,7 @@ SpriteAnimate__a:
 	jp	nz,.no_reset_animation
 	ldz			; ...reset current tile to zero
 .no_reset_animation
-	ld	[hl+],a		; (byte 3) a -> current anim table index, -> tmp1
-	ld	[tmp1],a
-	ld	a,[hl+]		; de <- (byte 4-5) SMT[i].anim_table
-	ld	e,a
-	ld	a,[hl+]
-	ld	d,a
-	ld	a,[tmp1]	; de <- SMT[i].anim_table[f]
-	adddea
-	ld	a,[de]		; new tile index -> OAM current tile
-	ld	[bc],a
-	inc	bc
-	ld	a,[hl+]		; de <- (byte 6-7) SMT[i].attr_table
-	ld	e,a
-	ld	a,[hl]
-	ld	d,a
-	ld	a,[tmp1]	; de <- SMT[i].attr_table[f]
-	adddea
-	ld	a,[de]
-	ld	[bc],a		; new attrs -> OAM attrs
-	ret
+	ld	[hl],a		; (byte 3) <- current anim table index
+	ld	a,c
+	jp	SpriteRecalculate__a
+	;ret
