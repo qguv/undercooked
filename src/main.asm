@@ -54,9 +54,7 @@ Tilemap: incbin "obj/house.tilemap"
 TilemapEnd:
 
 Blacktile:
-rept SCRN_TILE_B
-	db $ff
-endr
+	ds SCRN_TILE_B, $ff
 	registertiles Blacktile,1
 
 Star: incbin "obj/star.2bpp"
@@ -82,10 +80,10 @@ StarAnimTab:
 	db StarBeginIndex+7
 
 LStarAttrTab:
-	db 0,0,0,0,0,0,0,0
+	ds 8,0
 
 RStarAttrTab:
-	db OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP, OAMF_XFLIP
+	ds 8,OAMF_XFLIP
 
 SouthwardEarAnimTab:
 	db SouthwardBeginIndex+0
@@ -97,11 +95,11 @@ SouthwardHeadAnimTab:
 
 SouthwardREarAttrTab:
 SouthwardRHeadAttrTab:
-	db OAMF_XFLIP,OAMF_XFLIP
+	ds 2,OAMF_XFLIP
 
 SouthwardLEarAttrTab:
 SouthwardLHeadAttrTab:
-	db 0,0
+	ds 2,0
 
 SouthwardArmAnimTab:
 	db SouthwardBeginIndex+2
