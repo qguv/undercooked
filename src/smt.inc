@@ -7,13 +7,19 @@
 ; Each vblank, the vblank handler will read the RAM SMT and modify OAM RAM to
 ; advance animations and move sprites on the screen as necessary.
 
-; constants
-SMTF_ACTIVE equ 1
-SMTF_WORLD_FIXED equ 2
-SMTF_SCREEN_FIXED equ 0
-SMTF_ANIMATED equ 4
+;-----------,
+; constants ;
+;___________'
 
-; compiler variables
+SMTF_ACTIVE equ 1	; sprite should be drawn (SMT flag)
+SMTF_WORLD_FIXED equ 2	; sprite moves with background (SMT flag)
+SMTF_SCREEN_FIXED equ 0	; sprite does not move with background (SMT flag)
+SMTF_ANIMATED equ 4	; sprite is animated (SMT flag)
+
+;--------------------,
+; assembler counters ;
+;____________________'
+
 SPRITE_NUM set 0
 
 ; arguments:
@@ -39,16 +45,16 @@ if (\7) > $0f
     fail "Animation stall too high! Decrease stall or change the SMT format to fit the larger number!"
 endc
 	db	(\7) | ((\7) << 4)	; (byte 1 low nybble) animation speed in number of vblanks to skip
-				; (byte 1 high nybble) number of vblanks left to stall
-	db	(\6)		; (byte 2) animation table length
-	db	(\8)		; (byte 3) current/initial animation table index
-	dw	(\9)		; (byte 4-5) animation table address
-	dw	(\5)		; (byte 6-7) flag table address
-	db	(\4)		; (byte 8, ROM only) y
-	db	(\3)		; (byte 9, ROM only) x
+					; (byte 1 high nybble) number of vblanks left to stall
+	db	(\6)			; (byte 2) animation table length
+	db	(\8)			; (byte 3) current/initial animation table index
+	dw	(\9)			; (byte 4-5) animation table address
+	dw	(\5)			; (byte 6-7) flag table address
+	db	(\4)			; (byte 8, ROM only) y
+	db	(\3)			; (byte 9, ROM only) x
 	endm
 
-SMT_RAM_BYTES equ 8
-SMT_ROM_BYTES equ 10
+SMT_RAM_BYTES equ 8	; size of an SMT entry in RAM (in bytes)
+SMT_ROM_BYTES equ 10	; size of an SMT entry in ROM (in bytes)
 
 ; vim: se ft=rgbds:
