@@ -2,13 +2,13 @@
 ; arg a: sprite index in RAM SMT
 SpriteRecalculate__a:
 	ld	b,a			; b <- sprite index
-	ld	hl,_OAMRAM		; hl <- &OAMRAM[sprite_index].tile_id
+	ld	hl,OAM_BUF		; hl <- &OAM_BUF[sprite_index].tile_id
 	sla	a
 	sla	a
 	inc	a
 	inc	a
 	addhla
-	push	hl			; save &OAMRAM[sprite_index].tile_id
+	push	hl			; save &OAM_BUF[sprite_index].tile_id
 	ld	hl,SMT_RAM		; hl <- &SMT[sprite_index]
 	ld	a,b
 if SMT_RAM_BYTES == 8
@@ -44,12 +44,11 @@ endr
 	addbca
 	ld	a,[bc]			; d <- flag_table[anim_counter]
 	ld	d,a
-	pop	hl			; hl <- &OAMRAM[sprite_index].tile_id
-	ld	[hl],e			; OAMRAM[sprite_index].tile_id <- anim_table[anim_counter]
-	; GAMEBOY OAM HARDWARE BUG WORKAROUND: we can't use ldi/ldd/inc r16/dec r16
-	inc_hl_safe			; OAMRAM[sprite_index].attrs <- anim_table[anim_counter]
-	;				; hl <- &OAMRAM[sprite_index].attrs
-	ld	[hl],d			; OAMRAM[sprite_index].attrs <- flag_table[anim_counter]
+	pop	hl			; hl <- &OAM_BUF[sprite_index].tile_id
+	ld	a,e			; OAM_BUF[sprite_index].tile_id <- anim_table[anim_counter]
+	ld	[hl+],a
+	;				; hl <- &OAM_BUF[sprite_index].attrs
+	ld	[hl],d			; OAM_BUF[sprite_index].attrs <- flag_table[anim_counter]
 	ret
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
@@ -109,20 +108,20 @@ SpriteUpdate__a:
 ; Update a sprite's OAM position so it remains fixed to its position in the background.
 ; arg a: sprite index in RAM SMT
 SpriteFollowBackground__a:
-	ld	bc,_OAMRAM	; bc <- _OAMRAM[sprite index].y
+	ld	bc,OAM_BUF	; bc <- OAM_BUF[sprite index].y
 	sla	a
 	sla	a
 	addbca
 	ld	a,[dy]		; d <- dy
 	ld	d,a
 	; FIXME suspicious OOB VRAM access @ FE00-FE05 breaking sprites 0 and 1
-	ld	a,[bc]		; _OAMRAM[sprite index].y -= dy
+	ld	a,[bc]		; OAM_BUF[sprite index].y -= dy
 	sub	d
 	ld	[bc],a
-	inc	bc		; bc <- _OAMRAM[sprite_index].x
+	inc	bc		; bc <- OAM_BUF[sprite_index].x
 	ld	a,[dx]		; d <- dx
 	ld	d,a
-	ld	a,[bc]		; _OAMRAM[sprite index].x -= dx
+	ld	a,[bc]		; OAM_BUF[sprite index].x -= dx
 	sub	d
 	; FIXME suspicious OOB VRAM access @ FE00-FE05 breaking sprites 0 and 1
 	ld	[bc],a

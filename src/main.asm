@@ -135,11 +135,25 @@ SMT_ROM:
 	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,SouthwardLLegAttrTab,4,8,0,SouthwardLegAnimTab
 	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,SouthwardRLegAttrTab,4,8,2,SouthwardLegAnimTab
 
+;-----------------------------;
+; OAM DMA (put this in HIRAM) ;
+;_____________________________;
+
+RUN_DMA_HRAM_SRC			; 5 bytes	9 clocks
+	ldh [c],a			; 1 byte	2 clocks
+RUN_DMA_HRAM_SRC_LOOP
+	dec b				; 1 byte	1 clock
+	jr nz,RUN_DMA_HRAM_SRC_LOOP	; 2 bytes	2 clocks
+	ret				; 1 byte	4 clocks
+RUN_DMA_HRAM_SRC_END
+
 ;---------------,
 ; Allocated RAM ;
 ;_______________'
 
 		rsset _HIRAM
+run_dma_hram	rb (RUN_DMA_HRAM_SRC_END - RUN_DMA_HRAM_SRC)
+HRAM_GLOBALS	rb 0
 buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated	rb 1		; when the song repeats for the first time, start scrolling
 spr_index	rb 1		; used to loop through animating/moving sprites
@@ -169,12 +183,13 @@ WESTWARD	equ 1
 NORTHWARD	equ 2
 EASTWARD	equ 3
 
-_HIRAM_END	rb 0
-if _HIRAM_END > $fffe
+HRAM_GLOBALS_END	rb 0
+if HRAM_GLOBALS_END > $fffe
 	fail "Allocated HIRAM exceeds available HIRAM space!"
 endc
 
 		rsset _RAM
+OAM_BUF		rb $a0
 SMT_RAM		rb SPRITE_NUM * SMT_RAM_BYTES	; sprite meta-table, holding sprite animation and movement metadata
 _RAM_END	rb 0
 if _RAM_END > $dfff
@@ -211,10 +226,22 @@ begin::
 	ld	bc,160
 	call	mem_Set
 
+	; zero out OAM_BUF (sprite RAM buffer)
+	ldz
+	ld	hl,OAM_BUF
+	ld	bc,160
+	call	mem_Set
+
+	; copy DMA code to hram
+	ld	hl,RUN_DMA_HRAM_SRC
+	ld	de,run_dma_hram
+	ld	bc,(RUN_DMA_HRAM_SRC_END - RUN_DMA_HRAM_SRC)
+	call	mem_Copy
+
 	; zero out allocated HRAM
 	ldz
-	ld	hl,_HIRAM
-	ld	bc,_HIRAM_END-_HIRAM
+	ld	hl,HRAM_GLOBALS
+	ld	bc,(HRAM_GLOBALS_END - HRAM_GLOBALS)
 	call	mem_Set
 
 	; enable sound registers
@@ -285,7 +312,7 @@ endr
 	ld	[spr_index],a
 	ld	hl,SMT_ROM
 	ld	bc,SMT_RAM
-	ld	de,_OAMRAM
+	ld	de,OAM_BUF
 .smt_row
 rept SMT_RAM_BYTES		; bytes 0-7 go to SMT RAM
 	ld	a,[hl+]
@@ -325,6 +352,7 @@ endr
 .wait
 	; wait for vblank
 	halt
+	call    Main
 	jp	.wait
 
 StopLCD:
@@ -379,7 +407,27 @@ endr
 include "src/tiles.asm"
 include "src/sprites.asm"
 
+; Initiate a DMA transfer from OAM_BUF to the real OAM. The vblank period is
+; the only time we can do this without bugs. Called each frame by the vblank
+; interrupt.
 VBlank::
+	push	af
+	push	bc
+	push	de
+	push	hl
+
+	; start OAM DMA
+	ld a, OAM_BUF / $100
+	ld bc,$2946		; b: wait time, c: OAM trigger
+	call run_dma_hram
+
+	pop	hl
+	pop	de
+	pop	bc
+	pop	af
+	reti
+
+Main::
 	ld	a,[duration]
 	cpz
 	jp nz,.scroll_screen		; if the walk cycle isn't over, don't read buttons, just scroll
@@ -551,8 +599,7 @@ HandleNotes:
 	jp	z,.next_note
 	dec	a			; otherwise decrement and return
 	ld	[note_dur],a
-	reti
-
+	ret
 .next_note
 	ld	a,[note_swindex]
 	ld	hl,NoteDuration
