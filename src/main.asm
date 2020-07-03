@@ -187,7 +187,7 @@ endc
 
 begin::
 	di
-	ld	sp,$ffff
+	ld	sp,$e000	; use lowram for stack
 	call	StopLCD
 
 	ld	a,%11100100	; Window palette colors, from darkest to lightest
