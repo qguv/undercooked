@@ -37,9 +37,9 @@ endr
 	ld	a,[bc]			; e <- anim_table[anim_counter]
 	ld	e,a
 	ld	a,[hl+]			; bc <- &flag_table
-	ld	b,a
-	ld	a,[hl]
 	ld	c,a
+	ld	a,[hl]
+	ld	b,a
 	ld	a,d			; bc <- &flag_table[anim_counter]
 	addbca
 	ld	a,[bc]			; d <- flag_table[anim_counter]
