@@ -128,11 +128,14 @@ SpriteAnimate__a:
 	ld	b,a		; b <- i
 	ld	c,a		; c <- i
 	ld	hl,SMT_RAM	; hl <- &SMT[i]
-.loop
-	ld	a,SMT_RAM_BYTES
+if SMT_RAM_BYTES == 8
+rept 3
+	sla	a
+endr
+else
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprites.asm no longer applies!"
+endc
 	addhla
-	dec	b
-	jp	nz,.loop
 	inc	hl		; hl <- &SMT[i][1]
 	ld	a,[hl]		; b <- (byte 1 low nybble) animation stall amount
 	and	$0f

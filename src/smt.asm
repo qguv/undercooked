@@ -33,7 +33,7 @@ SmtRom
 	; right stove eye
 	db	SMTF_ACTIVE|SMTF_WORLD_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
 	db	2 | (2 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
-	db	8,0				; (byte 2) frames, (byte 3) current/initial frame
+	db	8,4				; (byte 2) frames, (byte 3) current/initial frame
 	dw	StarAnimTab,RStarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$2e,$6d				; (byte 8, ROM only) y (byte 9, ROM only) x
 
