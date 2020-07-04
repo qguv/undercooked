@@ -22,8 +22,6 @@ rept 3					; hl <- &SMT[sprite_index].anim_counter
 	inc	a
 endr
 	addhla
-	; push	hl
-	; pop	hl
 	ld	a,[hl+]			; d <- SMT[sprite_index].anim_counter
 	ld	d,a
 	;				; hl <- &SMT[sprite_index].anim_table_address
@@ -53,7 +51,7 @@ endr
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
 SpriteRecalculateAll:
-	ld	a,SPRITE_NUM
+	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
 .loop
 	dec	a
 	push	af
@@ -64,7 +62,7 @@ SpriteRecalculateAll:
 
 ; Update each sprite's animation, then update OAM RAM with its new position, animation frame, and flags. Call this every VBLANK.
 SpriteUpdateAll:
-	ld	a,SPRITE_NUM
+	ld	a,(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
 .loop
 	dec	a
 	push	af

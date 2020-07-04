@@ -34,7 +34,7 @@ optimcheck:
 $(OBJDIR)/main.o: \
 $(SRCDIR)/sprites.asm $(SRCDIR)/tiles.asm \
 $(LIBDIR)/gbhw.inc $(LIBDIR)/debug.inc $(LIBDIR)/memory.asm \
-$(SRCDIR)/optim.inc $(SRCDIR)/interrupts.asm $(SRCDIR)/music.asm $(SRCDIR)/smt.inc \
+$(SRCDIR)/optim.inc $(SRCDIR)/interrupts.asm $(SRCDIR)/music.asm $(SRCDIR)/smt.asm \
 $(OBJDIR)/house.2bpp $(OBJDIR)/house.tilemap $(OBJDIR)/star.2bpp $(OBJDIR)/southward.2bpp
 
 # ------------------------------------------------------------------------------

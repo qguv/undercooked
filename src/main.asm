@@ -67,73 +67,7 @@ Southward: incbin "obj/southward.2bpp"
 ; Sprite Meta-Table ;
 ;___________________'
 
-include "src/smt.inc"
-
-StarAnimTab:
-	db StarBeginIndex+0
-	db StarBeginIndex+1
-	db StarBeginIndex+2
-	db StarBeginIndex+3
-	db StarBeginIndex+4
-	db StarBeginIndex+5
-	db StarBeginIndex+6
-	db StarBeginIndex+7
-
-LStarAttrTab:
-	ds 8,0
-
-RStarAttrTab:
-	ds 8,OAMF_XFLIP
-
-SouthwardEarAnimTab:
-	db SouthwardBeginIndex+0
-	db SouthwardBeginIndex+4
-
-SouthwardHeadAnimTab:
-	db SouthwardBeginIndex+1
-	db SouthwardBeginIndex+5
-
-SouthwardREarAttrTab:
-SouthwardRHeadAttrTab:
-	ds 2,OAMF_XFLIP
-
-SouthwardLEarAttrTab:
-SouthwardLHeadAttrTab:
-	ds 2,0
-
-SouthwardArmAnimTab:
-	db SouthwardBeginIndex+2
-	db SouthwardBeginIndex+6
-	db SouthwardBeginIndex+2
-	db SouthwardBeginIndex+7
-
-SouthwardLegAnimTab:
-	db SouthwardBeginIndex+3
-	db SouthwardBeginIndex+8
-	db SouthwardBeginIndex+3
-	db SouthwardBeginIndex+9
-
-SouthwardLArmAttrTab:
-SouthwardLLegAttrTab:
-	db 0,0,0,OAMF_XFLIP
-
-SouthwardRArmAttrTab:
-SouthwardRLegAttrTab:
-	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
-
-SMT_ROM:
-	AnimSprite lstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$5d,$2e,LStarAttrTab,8,2,0,StarAnimTab
-	AnimSprite rstar_sprite,SMTF_ACTIVE|SMTF_WORLD_FIXED,$6d,$2e,RStarAttrTab,8,2,4,StarAnimTab
-
-	; cat facing southward
-	AnimSprite earsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$4e,SouthwardLEarAttrTab,2,8,0,SouthwardEarAnimTab
-	AnimSprite earsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$4e,SouthwardREarAttrTab,2,8,0,SouthwardEarAnimTab
-	AnimSprite headl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$56,SouthwardLHeadAttrTab,2,8,0,SouthwardHeadAnimTab
-	AnimSprite headr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$56,SouthwardRHeadAttrTab,2,8,0,SouthwardHeadAnimTab
-	AnimSprite armsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$5e,SouthwardLArmAttrTab,4,8,0,SouthwardArmAnimTab
-	AnimSprite armsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$5e,SouthwardRArmAttrTab,4,8,2,SouthwardArmAnimTab
-	AnimSprite legsl_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$50,$66,SouthwardLLegAttrTab,4,8,0,SouthwardLegAnimTab
-	AnimSprite legsr_sprite,SMTF_ACTIVE|SMTF_SCREEN_FIXED,$58,$66,SouthwardRLegAttrTab,4,8,2,SouthwardLegAnimTab
+include "src/smt.asm"
 
 ;-----------------------------;
 ; OAM DMA (put this in HIRAM) ;
@@ -147,9 +81,9 @@ RUN_DMA_HRAM_SRC_LOOP
 	ret				; 1 byte	4 clocks
 RUN_DMA_HRAM_SRC_END
 
-;---------------,
-; Allocated RAM ;
-;_______________'
+;----------------,
+; Allocated HRAM ;
+;________________'
 
 		rsset _HIRAM
 run_dma_hram	rb (RUN_DMA_HRAM_SRC_END - RUN_DMA_HRAM_SRC)
@@ -188,9 +122,19 @@ if HRAM_GLOBALS_END > $fffe
 	fail "Allocated HIRAM exceeds available HIRAM space!"
 endc
 
+;-------------------,
+; Allocated Low RAM ;
+;___________________'
+
 		rsset _RAM
+
+; OAM RAM buffer, copied to OAM RAM at each vblank
 OAM_BUF		rb $a0
-SMT_RAM		rb SPRITE_NUM * SMT_RAM_BYTES	; sprite meta-table, holding sprite animation and movement metadata
+
+; sprite meta-table, holding sprite animation and movement metadata
+SMT_RAM		rb ((SmtRomEnd - SmtRom) / SMT_ROM_BYTES) * SMT_RAM_BYTES
+
+; end of pre-allocated RAM; the rest is stack space
 _RAM_END	rb 0
 if _RAM_END > $dfff
 	fail "Allocated RAM exceeds available RAM space!"
@@ -308,9 +252,9 @@ endr
 	ld	[lfooty],a
 
 	; copy ROM SMT to RAM SMT and set OAM where needed
-	ld	a,SPRITE_NUM
+	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
 	ld	[spr_index],a
-	ld	hl,SMT_ROM
+	ld	hl,SmtRom
 	ld	bc,SMT_RAM
 	ld	de,OAM_BUF
 .smt_row
