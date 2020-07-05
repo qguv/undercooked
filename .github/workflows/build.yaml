@@ -47,6 +47,40 @@ jobs:
           name: undercooked_${{ github.sha }}.gb
           path: undercooked/obj/main.gb
 
+      - name: Get semver
+        uses: frabert/replace-string-action@v1.1
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        with:
+          string: ${{ github.ref }}
+          pattern: 'refs/tags/v'
+          replace-with: ''
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: |
+            [_Play this version directly in your browser_](https://qguv.github.io/undercooked/play/${{ steps.version.outputs.replaced }}.html)
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.replaced }}
+          draft: true
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/v0.') }}
+
+      - name: Upload undercooked ROM as release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: undercooked/obj/main.gb
+          asset_name: undercooked_v${{ steps.version.outputs.replaced }}.gb
+          asset_content_type: application/octet-stream
+
       - name: Remove undercooked ROM
         working-directory: undercooked
         run: rm obj/main.gb

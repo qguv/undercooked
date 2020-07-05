@@ -57,13 +57,10 @@ SOME_CONSTANT               ; equ-defined constant
 ## releasing
 
 1. update the wasmboy and ROM links in README for the new version
-2. create a new tag `vX.Y.Z`
-3. build the project
-4. push the tag to github
-5. make a github release (don't forget "play this version" link)
-6. upload the generated `releases/undercooked_vX.Y.Z` file as a release asset
-7. add the ROM to the `gh-pages` branch
-8. template and commit an embed page for this version
-9. update index with new links and new `latest` label
-10. commit and push `gh-pages` updates
-11. update github project description with new play link
+2. create and push a new tag `vX.Y.Z`
+3. add the ROM to the `gh-pages` branch
+4. template and commit an embed page for this version
+5. update index with new links and new `latest` label
+6. commit and push `gh-pages` updates
+7. update github project description with new play link
+8. edit and publish draft release
