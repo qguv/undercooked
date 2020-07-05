@@ -1,0 +1,70 @@
+name: "Build"
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Checkout rgbds
+        uses: actions/checkout@v2
+        with:
+          repository: rednex/rgbds
+          ref: v0.4.0
+          path: rgbds
+
+      - name: Install rdbds build deps
+        working-directory: rgbds
+        run: .github/actions/install_deps.sh ubuntu-20.04
+
+      - name: Build rgbds
+        working-directory: rgbds
+        run: make -j 2 Q= CC=gcc
+
+      - name: Install rgbds
+        working-directory: rgbds
+        run: sudo make -j 2 Q= install
+
+      - name: Package rgbds
+        working-directory: rgbds
+        run: |
+          mkdir bins
+          cp rgb{asm,link,fix,gfx} bins
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v1
+        with:
+          name: rgbds
+          path: rgbds/bins
+
+      - name: Test rgbds build
+        working-directory: rgbds
+        run: test/run-tests.sh
+
+      - name: Checkout undercooked
+        uses: actions/checkout@v2
+        with:
+          path: undercooked
+
+      - name: Install undercooked build deps
+        run: sudo apt-get install imagemagick
+
+      - name: Build undercooked
+        working-directory: undercooked
+        run: make obj/main.gb
+
+      - name: Upload undercooked ROM
+        uses: actions/upload-artifact@v1
+        with:
+          name: undercooked_${{ github.sha }}.gb
+          path: undercooked/obj/main.gb
+
+      - name: Remove undercooked ROM
+        working-directory: undercooked
+        run: rm obj/main.gb
+
+      - name: Upload remaining undercooked build objects
+        uses: actions/upload-artifact@v1
+        with:
+          name: obj
+          path: undercooked/obj
