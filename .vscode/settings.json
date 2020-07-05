@@ -1,0 +1,7 @@
+{
+	"editor.tabSize": 8,
+	"editor.insertSpaces": false,
+	"rgbdsz80.includePath": ["."],
+	//"rgbdsz80.includeAllDocCommentNewlines": true,
+	"editor.minimap.enabled": false,
+}
