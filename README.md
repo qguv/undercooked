@@ -1,6 +1,6 @@
 # undercooked
 
-![Build status](https://github.com/qguv/undercooked/workflows/Build/badge.svg?branch=master)
+[![build status](https://github.com/qguv/undercooked/workflows/build/badge.svg?branch=master)](https://github.com/qguv/undercooked/actions?query=workflow%3Abuild+branch%3Amaster)
 
 A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later models, too. Forever free and open source.
 
