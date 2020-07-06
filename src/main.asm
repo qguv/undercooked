@@ -200,6 +200,12 @@ begin::
 	ld	a,%10000011
 	ld	[rNR52],a
 
+	; write a triangle pattern to wave ram
+	ld	hl,Wavetable
+	ld	de,_AUD3WAVERAM
+	ld	bc,16
+	call	mem_Copy
+
 vram_addr set $8000
 
 LoadTiles: macro
@@ -618,5 +624,8 @@ pulsenote: macro
 	ld	[note_index],a
 
 	reti
+
+Wavetable
+	db $89,$ab,$cd,$ef,$fe,$dc,$ba,$98,$76,$54,$32,$10,$01,$23,$45,$67
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
