@@ -92,8 +92,10 @@ endc
 	and	SMTF_WORLD_FIXED
 	jp	z,.no_follow_background
 	push	bc
+	push	hl
 	ld	a,c
 	call	SpriteFollowBackground__a
+	pop	hl
 	pop	bc
 .no_follow_background
 	ld	a,[dx]			; flags_trigger_animate <- (dx || dy) ? SMTF_PLAYER|SMTF_ANIMATED : SMTF_ANIMATED;
@@ -111,7 +113,20 @@ endc
 	and	b			; if (SMT[sprite_index].flags && flags_trigger_animate) { return SpriteAnimate(sprite_index); }
 	ld	a,c
 	jp	nz,SpriteAnimate__a
-	ret
+	ld	a,SMTF_PLAYER		; else if (!SMT[i].player) { return; }
+	and	b
+	ret	z
+					; else /* SMT[i].player */ { SMT[i][3] = 0; return SpriteRecalculate(i); }
+	inc	hl			; hl <- SMT[i][3]
+	inc	hl
+	inc	hl
+	ld	a,[hl]			; SMT[i][3] %= 2
+					; FIXME this is a hack!
+	and	%11111110
+	ld	[hl],a			; SMT[i][3] = 0
+	ld	a,c
+	jp	SpriteRecalculate__a
+	;ret
 
 ; Update a sprite's OAM position so it remains fixed to its position in the background.
 ; arg a: sprite index in RAM SMT
