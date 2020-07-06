@@ -86,15 +86,18 @@ endc
 	addhla
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
 	ld	b,a
-	push	bc
 	and	SMTF_ACTIVE		; if (!SMT[sprite_index].active) { return; } (byte 0 LSB)
 	ret	z
 	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
 	and	SMTF_WORLD_FIXED
+	jp	z,.no_follow_background
+	push	bc
+	push	hl
 	ld	a,c
-	call	nz,SpriteFollowBackground__a
-	pop	bc			; b <- SMT[sprite_index].flags (byte 0)
-					; c <- i
+	call	SpriteFollowBackground__a
+	pop	hl
+	pop	bc
+.no_follow_background
 	ld	a,[dx]			; flags_trigger_animate <- (dx || dy) ? SMTF_PLAYER|SMTF_ANIMATED : SMTF_ANIMATED;
 	cpz
 	jp	nz,.player_animates
@@ -110,7 +113,18 @@ endc
 	and	b			; if (SMT[sprite_index].flags && flags_trigger_animate) { return SpriteAnimate(sprite_index); }
 	ld	a,c
 	jp	nz,SpriteAnimate__a
-	ret
+	ld	a,SMTF_PLAYER		; else if (!SMT[i].player) { return; }
+	and	b
+	ret	z
+					; else /* SMT[i].player */ { SMT[i][3] = 0; return SpriteRecalculate(i); }
+	inc	hl			; hl <- SMT[i][3]
+	inc	hl
+	inc	hl
+	;ldz
+	ld	[hl],a			; SMT[i][3] = 0
+	ld	a,c
+	jp	SpriteRecalculate__a
+	;ret
 
 ; Update a sprite's OAM position so it remains fixed to its position in the background.
 ; arg a: sprite index in RAM SMT
@@ -148,7 +162,21 @@ else
 fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprites.asm no longer applies!"
 endc
 	addhla
-	inc	hl		; hl <- &SMT[i][1]
+	ld	a,[hl+]		; a <- &SMT[i].flags
+				; hl <- &SMT[i][1]
+	and	SMTF_PLAYER	; if (SMT[i].player && !dx && !dy), then we can animate
+	jp	z,.can_animate
+	ld	a,[dx]
+	cpz
+	jp	nz,.can_animate
+	ld	a,[dy]
+	cpz
+	jp	nz,.can_animate
+	inc	hl		; else, we must reset
+				; hl <- &SMT[i][3]
+	inc	hl
+	jp	.reset_animation
+.can_animate
 	ld	a,[hl]		; b <- (byte 1 low nybble) animation stall amount
 	and	$0f
 	ld	b,a
@@ -174,6 +202,7 @@ endc
 	inc	a		; a++
 	cp	d		; if current tile + 1 == length...
 	jp	nz,.no_reset_animation
+.reset_animation
 	ldz			; ...reset current tile to zero
 .no_reset_animation
 	ld	[hl],a		; (byte 3) <- current anim table index
