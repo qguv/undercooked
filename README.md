@@ -6,7 +6,7 @@ A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later mode
 
 <img src="https://raw.githubusercontent.com/qguv/undercooked/master/art/title.png" /></a>
 
-[Play undercooked v0.0.5 now in your browser](https://qguv.github.io/undercooked/play/0.0.5.html), or [download the ROM](https://github.com/qguv/undercooked/releases/download/v0.0.5/undercooked_v0.0.5.gb) to play in an emulator or burn onto a Gameboy cartridge!
+[Play undercooked now in your browser](https://qguv.github.io/undercooked), or [download the ROM](https://qguv.github.io/undercooked) to play in an emulator or burn onto a Gameboy cartridge!
 
 ## credits
 
@@ -56,11 +56,8 @@ SOME_CONSTANT               ; equ-defined constant
 
 ## releasing
 
-1. update the wasmboy and ROM links in README for the new version
-2. create and push a new tag `vX.Y.Z`
-3. add the ROM to the `gh-pages` branch
-4. template and commit an embed page for this version
-5. update index with new links and new `latest` label
-6. commit and push `gh-pages` updates
-7. update github project description with new play link
-8. edit and publish draft release
+1. create and push a new tag `vX.Y.Z`
+2. add the ROM to the `gh-pages` branch
+3. template and commit an embed page for this version
+4. commit and push `gh-pages` updates
+5. edit and publish draft release
