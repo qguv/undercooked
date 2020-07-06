@@ -86,15 +86,16 @@ endc
 	addhla
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
 	ld	b,a
-	push	bc
 	and	SMTF_ACTIVE		; if (!SMT[sprite_index].active) { return; } (byte 0 LSB)
 	ret	z
 	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
 	and	SMTF_WORLD_FIXED
+	jp	z,.no_follow_background
+	push	bc
 	ld	a,c
-	call	nz,SpriteFollowBackground__a
-	pop	bc			; b <- SMT[sprite_index].flags (byte 0)
-					; c <- i
+	call	SpriteFollowBackground__a
+	pop	bc
+.no_follow_background
 	ld	a,[dx]			; flags_trigger_animate <- (dx || dy) ? SMTF_PLAYER|SMTF_ANIMATED : SMTF_ANIMATED;
 	cpz
 	jp	nz,.player_animates
