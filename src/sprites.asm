@@ -1,4 +1,4 @@
-; Set a sprite's OAM tile index and attributes from its (RAM) SMT state.
+; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
 ; arg a: sprite index in RAM SMT
 SpriteRecalculate__a:
 	ld	b,a			; b <- sprite index
@@ -60,7 +60,8 @@ SpriteRecalculateAll:
 	jp	nz,.loop
 	ret
 
-; Update each sprite's animation, then update OAM RAM with its new position, animation frame, and flags. Call this every VBLANK.
+; Update each sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
+; TODO check here for SMTF_ACTIVE; that way we can paint new sprites over inactive ones
 SpriteUpdateAll:
 	ld	a,(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
 .loop
@@ -71,7 +72,7 @@ SpriteUpdateAll:
 	jp	nz,.loop
 	ret
 
-; Update a sprite's animation, then update OAM RAM with its new position, animation frame, and flags.
+; Update a sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
 ; arg a: sprite index in RAM SMT
 SpriteUpdate__a:
 	ld	c,a			; c <- i
@@ -128,7 +129,7 @@ endc
 	jp	SpriteRecalculate__a
 	;ret
 
-; Update a sprite's OAM position so it remains fixed to its position in the background.
+; Update a sprite's OAM buffer position so it remains fixed to its position in the background.
 ; arg a: sprite index in RAM SMT
 SpriteFollowBackground__a:
 	ld	bc,OAM_BUF	; bc <- OAM_BUF[sprite index].y
@@ -150,7 +151,7 @@ SpriteFollowBackground__a:
 	ld	[bc],a
 	ret
 
-; Update a sprite's animation counters in its (RAM) SMT state and update tile index and attributes in OAM.
+; Update a sprite's animation counters in its (RAM) SMT state and update tile index and attributes in OAM buffer
 ; arg a: sprite index in RAM SMT
 SpriteAnimate__a:
 	ld	b,a		; b <- i

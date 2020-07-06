@@ -112,6 +112,7 @@ LStarAttrTab
 RStarAttrTab
 	ds 8,OAMF_XFLIP
 
+; TODO find some way to deal with tilemap files that assume the first tile in the sprite is tile 0. maybe even a preprocessing recipe to add a constant to each byte in the file? idk
 SouthwardEarAnimTab
 	db SouthwardBeginIndex+0
 	db SouthwardBeginIndex+4
