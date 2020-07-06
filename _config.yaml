@@ -1,0 +1,14 @@
+title: Undercooked release archive
+description: >-
+url: "https://qguv.github.io/undercooked"
+
+theme: minima
+plugins:
+  - jekyll-feed
+
+defaults:
+  - scope:
+      type: "posts"
+    values:
+      layout: "post"
+      permalink: /play/:title/
