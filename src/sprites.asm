@@ -89,13 +89,25 @@ endc
 	push	bc
 	and	SMTF_ACTIVE		; if (!SMT[sprite_index].active) { return; } (byte 0 LSB)
 	ret	z
-	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { PositionUpdate(sprite_index <- c); } (byte 0 bit 1)
+	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
 	and	SMTF_WORLD_FIXED
 	ld	a,c
 	call	nz,SpriteFollowBackground__a
-	pop	bc
-	ld	a,b			; if (SMT[sprite_index].animated) { return SpriteAnimate(sprite_index); } (byte 0 bit 2)
-	and	SMTF_ANIMATED
+	pop	bc			; b <- SMT[sprite_index].flags (byte 0)
+					; c <- i
+	ld	a,[dx]			; flags_trigger_animate <- (dx || dy) ? SMTF_PLAYER|SMTF_ANIMATED : SMTF_ANIMATED;
+	cpz
+	jp	nz,.player_animates
+	ld	a,[dy]
+	cpz
+	jp	nz,.player_animates
+	ldz
+	jp	.player_doesnt_animate
+.player_animates
+	ld	a,SMTF_PLAYER
+.player_doesnt_animate
+	or	SMTF_ANIMATED
+	and	b			; if (SMT[sprite_index].flags && flags_trigger_animate) { return SpriteAnimate(sprite_index); }
 	ld	a,c
 	jp	nz,SpriteAnimate__a
 	ret

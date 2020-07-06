@@ -10,7 +10,8 @@
 SMTF_ACTIVE equ 1	; sprite should be drawn (SMT flag)
 SMTF_WORLD_FIXED equ 2	; sprite moves with background (SMT flag)
 SMTF_SCREEN_FIXED equ 0	; sprite does not move with background (SMT flag)
-SMTF_ANIMATED equ 4	; sprite is animated (SMT flag)
+SMTF_ANIMATED equ 4	; sprite animates constantly (SMT flag)
+SMTF_PLAYER equ 8	; sprite animates only when the screen is moving (SMT flag)
 
 SMT_RAM_BYTES equ 8	; size of an SMT entry in RAM (in bytes)
 SMT_ROM_BYTES equ 10	; size of an SMT entry in ROM (in bytes)
@@ -38,57 +39,57 @@ SmtRom
 	db	$2e,$6d				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat left ear
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardEarAnimTab,SouthwardLEarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat right ear
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardEarAnimTab,SouthwardREarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cart left head
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardHeadAnimTab,SouthwardLHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat right head
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardHeadAnimTab,SouthwardRHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat left arm
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardArmAnimTab,SouthwardLArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat right arm
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardArmAnimTab,SouthwardRArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat left leg
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardLegAnimTab,SouthwardLLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; southward cat right leg
-	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
-	db	8 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
 	dw	SouthwardLegAnimTab,SouthwardRLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
