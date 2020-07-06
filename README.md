@@ -57,7 +57,4 @@ SOME_CONSTANT               ; equ-defined constant
 ## releasing
 
 1. create and push a new tag `vX.Y.Z`
-2. add the ROM to the `gh-pages` branch
-3. template and commit an embed page for this version
-4. commit and push `gh-pages` updates
-5. edit and publish draft release
+2. edit and publish the [draft github release](https://github.com/qguv/undercooked/releases) that was just created for you
