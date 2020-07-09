@@ -1,32 +1,34 @@
 ; Update each sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
-; TODO check here for SMTF_ACTIVE; that way we can paint new sprites over inactive ones
 SpriteUpdateAll:
-	ld	a,(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
+	ld	bc,0		; b <- OAM (active) sprite counter
+				; c <- SMT sprite counter
+	ld	hl,SMT_RAM
 .loop
-	dec	a
-	push	af
-	call	SpriteUpdate__a
-	pop	af
-	jp	nz,.loop
-	ret
+	ld	a,[hl]		; if sprite isn't active
+	and	SMTF_ACTIVE
+	ld	a,b
+	jp	z,.nocall	; skip it
+	push	bc
+	push	hl
+	call	nz,SpriteUpdate__ahl
+	pop	hl
+	pop	bc
+	inc	b
+.nocall
+	inc	c
+	cp	(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
+	ret	z
+	ld	a,8
+	addhla
+	jp	.loop
+	;ret
 
 ; Update a sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
 ; arg a: sprite index in RAM SMT
-SpriteUpdate__a:
+SpriteUpdate__ahl:
 	ld	c,a			; c <- i
-	ld	hl,SMT_RAM		; hl <- &SMT[i]
-if SMT_RAM_BYTES == 8
-rept 3
-	sla	a
-endr
-else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteUpdate__a in src/sprite.asm no longer applies!"
-endc
-	addhla
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
 	ld	b,a
-	and	SMTF_ACTIVE		; if (!SMT[sprite_index].active) { return; } (byte 0 LSB)
-	ret	z
 	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
 	and	SMTF_WORLD_FIXED
 	jp	z,.no_follow_background
@@ -62,6 +64,7 @@ endc
 	ld	a,[hl]			; SMT[i][3] %= 2
 					; FIXME this is a hack!
 	and	%11111110
+	xor	%00000010
 	ld	[hl],a			; SMT[i][3] = 0
 	ld	a,c
 	jp	SpriteRecalculate__a
