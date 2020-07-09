@@ -20,7 +20,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteUpdate__a in src/sprites.asm no longer applies!"
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteUpdate__a in src/sprite.asm no longer applies!"
 endc
 	addhla
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
@@ -100,7 +100,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprites.asm no longer applies!"
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprite.asm no longer applies!"
 endc
 	addhla
 	inc	hl		; hl <- &SMT[i][1]
@@ -165,7 +165,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprites.asm no longer applies!"
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprite.asm no longer applies!"
 endc
 rept 3					; hl <- &SMT[sprite_index].anim_counter
 	inc	a

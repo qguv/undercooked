@@ -355,7 +355,7 @@ endr
 
 ; TODO start using linker for these to avoid including unneeded subroutines
 include "src/tiles.asm"
-include "src/sprites.asm"
+include "src/sprite.asm"
 
 ; Initiate a DMA transfer from OAM_BUF to the real OAM. The vblank period is
 ; the only time we can do this without bugs. Called each frame by the vblank
