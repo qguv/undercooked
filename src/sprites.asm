@@ -1,65 +1,3 @@
-; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
-; arg a: sprite index in RAM SMT
-SpriteRecalculate__a:
-	ld	b,a			; b <- sprite index
-	ld	hl,OAM_BUF		; hl <- &OAM_BUF[sprite_index].tile_id
-	sla	a
-	sla	a
-	inc	a
-	inc	a
-	addhla
-	push	hl			; save &OAM_BUF[sprite_index].tile_id
-	ld	hl,SMT_RAM		; hl <- &SMT[sprite_index]
-	ld	a,b
-if SMT_RAM_BYTES == 8
-rept 3
-	sla	a
-endr
-else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprites.asm no longer applies!"
-endc
-rept 3					; hl <- &SMT[sprite_index].anim_counter
-	inc	a
-endr
-	addhla
-	ld	a,[hl+]			; d <- SMT[sprite_index].anim_counter
-	ld	d,a
-	;				; hl <- &SMT[sprite_index].anim_table_address
-	ld	a,[hl+]			; bc <- &anim_table
-	ld	c,a
-	ld	a,[hl+]
-	ld	b,a
-	;				; hl <- &SMT[sprite_index].flag_table_address
-	ld	a,d			; bc <- &anim_table[anim_counter]
-	addbca
-	ld	a,[bc]			; e <- anim_table[anim_counter]
-	ld	e,a
-	ld	a,[hl+]			; bc <- &flag_table
-	ld	c,a
-	ld	a,[hl]
-	ld	b,a
-	ld	a,d			; bc <- &flag_table[anim_counter]
-	addbca
-	ld	a,[bc]			; d <- flag_table[anim_counter]
-	ld	d,a
-	pop	hl			; hl <- &OAM_BUF[sprite_index].tile_id
-	ld	a,e			; OAM_BUF[sprite_index].tile_id <- anim_table[anim_counter]
-	ld	[hl+],a
-	;				; hl <- &OAM_BUF[sprite_index].attrs
-	ld	[hl],d			; OAM_BUF[sprite_index].attrs <- flag_table[anim_counter]
-	ret
-
-; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
-SpriteRecalculateAll:
-	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
-.loop
-	dec	a
-	push	af
-	call	SpriteRecalculate__a
-	pop	af
-	jp	nz,.loop
-	ret
-
 ; Update each sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
 ; TODO check here for SMTF_ACTIVE; that way we can paint new sprites over inactive ones
 SpriteUpdateAll:
@@ -197,3 +135,65 @@ endc
 	ld	a,c
 	jp	SpriteRecalculate__a
 	;ret
+
+; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
+SpriteRecalculateAll:
+	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
+.loop
+	dec	a
+	push	af
+	call	SpriteRecalculate__a
+	pop	af
+	jp	nz,.loop
+	ret
+
+; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
+; arg a: sprite index in RAM SMT
+SpriteRecalculate__a:
+	ld	b,a			; b <- sprite index
+	ld	hl,OAM_BUF		; hl <- &OAM_BUF[sprite_index].tile_id
+	sla	a
+	sla	a
+	inc	a
+	inc	a
+	addhla
+	push	hl			; save &OAM_BUF[sprite_index].tile_id
+	ld	hl,SMT_RAM		; hl <- &SMT[sprite_index]
+	ld	a,b
+if SMT_RAM_BYTES == 8
+rept 3
+	sla	a
+endr
+else
+fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprites.asm no longer applies!"
+endc
+rept 3					; hl <- &SMT[sprite_index].anim_counter
+	inc	a
+endr
+	addhla
+	ld	a,[hl+]			; d <- SMT[sprite_index].anim_counter
+	ld	d,a
+	;				; hl <- &SMT[sprite_index].anim_table_address
+	ld	a,[hl+]			; bc <- &anim_table
+	ld	c,a
+	ld	a,[hl+]
+	ld	b,a
+	;				; hl <- &SMT[sprite_index].flag_table_address
+	ld	a,d			; bc <- &anim_table[anim_counter]
+	addbca
+	ld	a,[bc]			; e <- anim_table[anim_counter]
+	ld	e,a
+	ld	a,[hl+]			; bc <- &flag_table
+	ld	c,a
+	ld	a,[hl]
+	ld	b,a
+	ld	a,d			; bc <- &flag_table[anim_counter]
+	addbca
+	ld	a,[bc]			; d <- flag_table[anim_counter]
+	ld	d,a
+	pop	hl			; hl <- &OAM_BUF[sprite_index].tile_id
+	ld	a,e			; OAM_BUF[sprite_index].tile_id <- anim_table[anim_counter]
+	ld	[hl+],a
+	;				; hl <- &OAM_BUF[sprite_index].attrs
+	ld	[hl],d			; OAM_BUF[sprite_index].attrs <- flag_table[anim_counter]
+	ret
