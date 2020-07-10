@@ -64,6 +64,10 @@ $(OBJDIR)/%.png: $(OBJDIR)/%_wfg.png
 	$(info $n correcting white foreground of $<)
 	convert "$<" -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove "$@"
 
+$(OBJDIR)/%.png: $(OBJDIR)/%_quant4.png
+	$(info $n quantizing colors of $<)
+	convert "$<" -quantize gray -colors 4 -dither None "$@"
+
 $(OBJDIR)/%.png: $(OBJDIR)/%_to16.png
 	$(info $n correcting width of $<)
 	convert "$<" -sample 16 "$@"
