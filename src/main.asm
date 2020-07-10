@@ -268,11 +268,20 @@ endr
 	ld	bc,SMT_RAM
 	ld	de,OAM_BUF
 .smt_row
-rept SMT_RAM_BYTES		; bytes 0-7 go to SMT RAM
+	push	de
+	ld	a,[hl+]
+	ld	[bc],a
+	inc	bc
+	ld	d,a		; d <- flags
+rept SMT_RAM_BYTES - 1		; bytes 0-7 go to SMT RAM
 	ld	a,[hl+]
 	ld	[bc],a
 	inc	bc
 endr
+	ld	a,d		; if not active, skip OAM setup
+	and	SMTF_ACTIVE
+	pop	de
+	jp	z,.no_oam
 rept 2				; bytes 8-10 go to OAM RAM
 	ld	a,[hl+]
 	ld	[de],a
@@ -280,6 +289,7 @@ rept 2				; bytes 8-10 go to OAM RAM
 endr
 	inc	de		; don't set OAM tile yet
 	inc	de		; don't set OAM attribute yet
+.no_oam
 
 	ld	a,[spr_index]
 	dec	a
