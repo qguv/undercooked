@@ -6,31 +6,39 @@ SpriteUpdateAll:
 .loop
 	ld	a,[hl]		; if sprite isn't active
 	and	SMTF_ACTIVE
-	ld	a,b
-	jp	z,.nocall	; skip it
-	push	bc
+	jp	z,.skip	; skip it
+	push	bc		; SpriteUpdate(oam counter, SMT address)
 	push	hl
-	call	nz,SpriteUpdate__ahl
+	ld	a,b
+	call	SpriteUpdate__ahl
+	pop	hl
+	pop	bc
+	push	bc		; SpriteRecalculate(oam counter, SMT address)
+	push	hl
+	ld	a,b
+	call	SpriteRecalculate__ahl
 	pop	hl
 	pop	bc
 	inc	b
-.nocall
+.skip
 	inc	c
+	ld	a,c
 	cp	(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
 	ret	z
-	ld	a,8
+	ld	a,SMT_RAM_BYTES
 	addhla
 	jp	.loop
 	;ret
 
 ; Update a sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
-; arg a: sprite index in RAM SMT
+; arg a: sprite index in OAM
+; arg hl: beginning of SMT entry
 SpriteUpdate__ahl:
 	ld	c,a			; c <- i
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
 	ld	b,a
-	ld	a,b			; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
-	and	SMTF_WORLD_FIXED
+	;ld	a,b
+	and	SMTF_WORLD_FIXED	; if ((SMT[sprite_index] <- b).world_fixed) { SpriteFollowBackground(sprite_index <- c); } (byte 0 bit 1)
 	jp	z,.no_follow_background
 	push	bc
 	push	hl
@@ -51,9 +59,9 @@ SpriteUpdate__ahl:
 	ld	a,SMTF_PLAYER
 .player_doesnt_animate
 	or	SMTF_ANIMATED
-	and	b			; if (SMT[sprite_index].flags && flags_trigger_animate) { return SpriteAnimate(sprite_index); }
+	and	b			; if (SMT[sprite_index].flags & flags_trigger_animate) { return SpriteAnimate(sprite_index); }
 	ld	a,c
-	jp	nz,SpriteAnimate__a
+	jp	nz,SpriteAnimate__ahl
 	ld	a,SMTF_PLAYER		; else if (!SMT[i].player) { return; }
 	and	b
 	ret	z
@@ -64,14 +72,11 @@ SpriteUpdate__ahl:
 	ld	a,[hl]			; SMT[i][3] %= 2
 					; FIXME this is a hack!
 	and	%11111110
-	xor	%00000010
 	ld	[hl],a			; SMT[i][3] = 0
-	ld	a,c
-	jp	SpriteRecalculate__a
-	;ret
+	ret
 
 ; Update a sprite's OAM buffer position so it remains fixed to its position in the background.
-; arg a: sprite index in RAM SMT
+; arg a: sprite index in OAM
 SpriteFollowBackground__a:
 	ld	bc,OAM_BUF	; bc <- OAM_BUF[sprite index].y
 	sla	a
@@ -94,18 +99,9 @@ SpriteFollowBackground__a:
 
 ; Update a sprite's animation counters in its (RAM) SMT state and update tile index and attributes in OAM buffer
 ; arg a: sprite index in RAM SMT
-SpriteAnimate__a:
+SpriteAnimate__ahl:
 	ld	b,a		; b <- i
 	ld	c,a		; c <- i
-	ld	hl,SMT_RAM	; hl <- &SMT[i]
-if SMT_RAM_BYTES == 8
-rept 3
-	sla	a
-endr
-else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprite.asm no longer applies!"
-endc
-	addhla
 	inc	hl		; hl <- &SMT[i][1]
 	ld	a,[hl]		; b <- (byte 1 low nybble) animation stall amount
 	and	$0f
@@ -135,45 +131,42 @@ endc
 	ldz			; ...reset current tile to zero
 .no_reset_animation
 	ld	[hl],a		; (byte 3) <- current anim table index
-	ld	a,c
-	jp	SpriteRecalculate__a
-	;ret
+	ret
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
 SpriteRecalculateAll:
-	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
+	ld	bc,0		; b <- OAM (active) sprite counter
+				; c <- SMT sprite counter
+	ld	hl,SMT_RAM
 .loop
-	dec	a
-	push	af
-	call	SpriteRecalculate__a
-	pop	af
-	jp	nz,.loop
-	ret
+	ld	a,[hl]		; if sprite isn't active
+	and	SMTF_ACTIVE
+	jp	z,.skip		; skip it
+	push	bc		; SpriteRecalculate(oam counter, SMT address)
+	push	hl
+	ld	a,b
+	call	SpriteRecalculate__ahl
+	pop	hl
+	pop	bc
+	inc	b
+.skip
+	inc	c
+	ld	a,c
+	cp	(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
+	ret	z
+	ld	a,SMT_RAM_BYTES
+	addhla
+	jp	.loop
+	;ret
 
 ; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
-; arg a: sprite index in RAM SMT
-SpriteRecalculate__a:
-	ld	b,a			; b <- sprite index
-	ld	hl,OAM_BUF		; hl <- &OAM_BUF[sprite_index].tile_id
-	sla	a
-	sla	a
-	inc	a
-	inc	a
-	addhla
-	push	hl			; save &OAM_BUF[sprite_index].tile_id
-	ld	hl,SMT_RAM		; hl <- &SMT[sprite_index]
-	ld	a,b
-if SMT_RAM_BYTES == 8
-rept 3
-	sla	a
-endr
-else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprite.asm no longer applies!"
-endc
-rept 3					; hl <- &SMT[sprite_index].anim_counter
-	inc	a
-endr
-	addhla
+; arg a: sprite index in OAM
+; arg hl: address of SMT row
+SpriteRecalculate__ahl:
+	push	af
+	inc	hl
+	inc	hl
+	inc	hl
 	ld	a,[hl+]			; d <- SMT[sprite_index].anim_counter
 	ld	d,a
 	;				; hl <- &SMT[sprite_index].anim_table_address
@@ -194,7 +187,13 @@ endr
 	addbca
 	ld	a,[bc]			; d <- flag_table[anim_counter]
 	ld	d,a
-	pop	hl			; hl <- &OAM_BUF[sprite_index].tile_id
+	pop	af			; a <- OAM sprite index
+	ld	hl,OAM_BUF		; hl <- &OAM_BUF[sprite_index]
+	sla	a			; hl <- &OAM_BUF[sprite_index].tile_id
+	sla	a
+	inc	a
+	inc	a
+	addhla
 	ld	a,e			; OAM_BUF[sprite_index].tile_id <- anim_table[anim_counter]
 	ld	[hl+],a
 	;				; hl <- &OAM_BUF[sprite_index].attrs
