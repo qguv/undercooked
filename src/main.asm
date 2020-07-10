@@ -64,7 +64,7 @@ Southward: incbin "obj/southward.2bpp"
 	registertiles Southward,10
 
 Northward: incbin "obj/northward.2bpp"
-	registertiles Northward,10
+	registertiles Northward,$16
 
 ;-------------------,
 ; Sprite Meta-Table ;
