@@ -63,6 +63,9 @@ Star: incbin "obj/star.2bpp"
 Southward: incbin "obj/southward.2bpp"
 	registertiles Southward,10
 
+Northward: incbin "obj/northward.2bpp"
+	registertiles Northward,10
+
 ;-------------------,
 ; Sprite Meta-Table ;
 ;___________________'
@@ -225,6 +228,7 @@ vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	LoadTiles Blacktile,BlacktileFrames
 	LoadTiles Star,StarFrames
 	LoadTiles Southward,SouthwardFrames
+	LoadTiles Northward,NorthwardFrames
 
 if TilesetBeginIndex != 0
 	fail "the first tiles in tile memory must be the tileset used by the tilemap!"

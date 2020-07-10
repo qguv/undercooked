@@ -94,6 +94,61 @@ SmtRom
 	dw	SouthwardLegAnimTab,SouthwardRLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
+	; northward cat left ear
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardEarAnimTab,NorthwardLEarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$4e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat right ear
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardEarAnimTab,NorthwardREarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$4e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cart left head
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardHeadAnimTab,NorthwardLHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$56,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat right head
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardHeadAnimTab,NorthwardRHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$56,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat left arm
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardArmAnimTab,NorthwardLArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$5e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat right arm
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardArmAnimTab,NorthwardRArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$5e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat left leg
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardLegAnimTab,NorthwardLLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$66,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	; northward cat right leg
+	db	SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
+	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
+	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
+	dw	NorthwardLegAnimTab,NorthwardRLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 SmtRomEnd
 
 StarAnimTab
@@ -121,14 +176,6 @@ SouthwardHeadAnimTab
 	db SouthwardBeginIndex+1
 	db SouthwardBeginIndex+5
 
-SouthwardREarAttrTab
-SouthwardRHeadAttrTab
-	ds 2,OAMF_XFLIP
-
-SouthwardLEarAttrTab
-SouthwardLHeadAttrTab
-	ds 2,0
-
 SouthwardArmAnimTab
 	db SouthwardBeginIndex+2
 	db SouthwardBeginIndex+6
@@ -141,12 +188,48 @@ SouthwardLegAnimTab
 	db SouthwardBeginIndex+3
 	db SouthwardBeginIndex+9
 
+NorthwardEarAnimTab
+	db NorthwardBeginIndex+0
+	db NorthwardBeginIndex+4
+
+NorthwardHeadAnimTab
+	db NorthwardBeginIndex+1
+	db NorthwardBeginIndex+5
+
+NorthwardArmAnimTab
+	db NorthwardBeginIndex+2
+	db NorthwardBeginIndex+6
+	db NorthwardBeginIndex+2
+	db NorthwardBeginIndex+7
+
+NorthwardLegAnimTab
+	db NorthwardBeginIndex+3
+	db NorthwardBeginIndex+8
+	db NorthwardBeginIndex+3
+	db NorthwardBeginIndex+9
+
+SouthwardREarAttrTab
+SouthwardRHeadAttrTab
+NorthwardREarAttrTab
+NorthwardRHeadAttrTab
+	ds 2,OAMF_XFLIP
+
+SouthwardLEarAttrTab
+SouthwardLHeadAttrTab
+NorthwardLEarAttrTab
+NorthwardLHeadAttrTab
+	ds 2,0
+
 SouthwardLArmAttrTab
 SouthwardLLegAttrTab
+NorthwardLArmAttrTab
+NorthwardLLegAttrTab
 	db 0,0,0,OAMF_XFLIP
 
 SouthwardRArmAttrTab
 SouthwardRLegAttrTab
+NorthwardRArmAttrTab
+NorthwardRLegAttrTab
 	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
 
 ; vim: se ft=rgbds:
