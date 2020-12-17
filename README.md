@@ -16,20 +16,28 @@ A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later mode
 
 ## building
 
-1. install rgbds and imagemagick
-2. `make -j8`, this will produce `releases/undercooked_xyz.gb` where `xyz` is the version
+prerequisite packages:
+
+package     | purpose
+----------- | -------
+rgbds       | toolchain for cross-compiling for the gameboy architecture
+imagemagick | image correction tasks for sprites and tiles
+ninja       | build system
+python3     | build system
+
+1. run `./build.py`
 
 ## playing
 
 - you can run on real hardware with a flash cart like the GB USB 64M
-- you can run on your regular emulator of choice, zboy is fine (change EMULATOR in the makefile, then run `make play`)
-- you can run on bgb, a very good emulator with a debugger, using wine (put a script called `bgb` on your $PATH that launches bgb with wine, then run `make play`)
+- you can run on your regular emulator of choice, `zboy` is fine
+- you can run on `bgb`, a very good emulator with a debugger, using wine (see [this AUR package](https://aur.archlinux.org/packages/bgb))
 
 ## developing
 
-1. make some changes
-2. run `make optimcheck` to make sure you didn't miss any easily optimizable instructions
-3. run `make play` to play it with the EMULATOR configured in the Makefile
+1. run `./build.py`
+2. run `bgb -nobatt -watch obj/main.gb` to play it
+3. now every time you run `./build.py`, bgb will reload the newly built ROM
 
 ## naming conventions
 

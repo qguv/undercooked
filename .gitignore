@@ -1,3 +1,4 @@
 *.gb
 *.sav
 obj
+.ninja_log

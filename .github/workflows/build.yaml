@@ -2,6 +2,19 @@ name: build
 on: push
 jobs:
 
+  test-build-system:
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Checkout undercooked
+        uses: actions/checkout@v2
+        with:
+          path: undercooked
+
+      - name: Test build.ninja generator
+        working-directory: undercooked
+        run: python3 -m doctest -v build.py
+
   build:
     runs-on: ubuntu-20.04
     steps:
@@ -38,9 +51,14 @@ jobs:
         with:
           path: undercooked
 
+      - name: Setup ninja build system
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.10.2
+
       - name: Build undercooked
         working-directory: undercooked
-        run: make obj/main.gb
+        run: ./build.py
 
       - name: Move undercooked ROM into project directory
         working-directory: undercooked

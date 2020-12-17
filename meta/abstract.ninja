@@ -1,0 +1,85 @@
+ninja_required_version = 1.3
+
+rule rgbasm
+  command = rgbasm -v -E -o $out $in
+
+rule rgblink_rgbfix
+  command = rgblink -n $prefix.sym -o $prefix.gb $in && rgbfix -v -p 0 $prefix.gb
+
+rule rgbgfx
+  description = format image for gameboy
+  command = rgbgfx -o $out $in
+
+rule fix_white_foreground
+  description = correct image with white foreground
+  command = convert $in -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove $out
+
+rule fix_width
+  description = quantize image width
+  command = convert $in -sample 16 $out
+
+rule stack_frames
+  description = vertically stack animation frames into a flat image
+  command = convert -coalesce $in -append $out
+
+rule count_frames
+  description = count frames of animation
+  command = printf '\x'"$$(printf '%02d\n' "$$(identify -format '%n\n' $in | head -n 1)")" > $out
+
+rule rgbgfx_background
+  description = extract unique tiles from background image
+  command = rgbgfx --unique-tiles --tilemap $prefix.tilemap --output $prefix.2bpp $in
+
+rule rgbgfx_sprite
+  description = extract unique and mirrored tiles from sprite image
+  command = rgbgfx --mirror-tiles --tilemap $prefix.tilemap --attr-map $prefix.attrmap --output $prefix.2bpp $in
+
+rule rgbasm_deps_simple
+  description = list files included when building this file (using sed)
+  command = sed -n 's/^.*inc\(lude\|bin\) "\([^"]*\)".*$$/\2/p' $in > $out
+
+rule rgbasm_deps
+  description = list files included when building this file (using rgbasm, but this crashes after the first one)
+  command = rgbasm -M $out -MT '' -MG $in
+
+rule deps2dd
+  description = convert Make dependency syntax into ninja dyndep syntax
+  command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
+
+match src/*.asm
+
+build obj/$*.deps: rgbasm_deps_simple src/$*.asm
+build obj/$*.dd: deps2dd obj/$*.deps
+  target = obj/$*.o
+
+build obj/$*.o: rgbasm src/$*.asm || obj/$*.dd
+  dyndep = obj/$*.dd
+
+build obj/$*.gb obj/$*.sym: rgblink_rgbfix obj/$*.o
+  prefix = obj/$*
+
+match art/*_wfg.png
+
+build obj/$*.png: fix_white_foreground art/$*_wfg.png
+build obj/$*.2bpp: rgbgfx obj/$*.png
+
+match art/*_sprite_wfg_to16.gif
+
+build obj/$*_sprite_wfg_to16.png: stack_frames art/$*_sprite_wfg_to16.gif
+build obj/$*_sprite_wfg.png: fix_width obj/$*_sprite_wfg_to16.png
+build obj/$*_sprite.png: fix_white_foreground obj/$*_sprite_wfg.png
+build obj/$*.2bpp obj/$*.tilemap obj/$*.attrmap: rgbgfx_sprite obj/$*_sprite_wfg.png
+  prefix = obj/$*
+
+match art/*_bg.png
+
+build obj/$*.2bpp obj/$*.tilemap: rgbgfx_background art/$*_bg.png
+  prefix = obj/$*
+
+match art/*.png
+
+build obj/$*.2bpp: rgbgfx art/$*.png
+
+verbatim
+
+default obj/main.gb
