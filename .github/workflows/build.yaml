@@ -46,17 +46,23 @@ jobs:
           name: rgbds
           path: rgbds/bins
 
+      - name: Download ninja binary
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: ninja-build/ninja
+          version: "1.10.2"
+          file: ninja-linux.zip
+
+      - name: Extract ninja binary
+        run: unzip ninja-linux.zip
+
+      - name: Install ninja
+        run: sudo install ninja /usr/local/bin/
+
       - name: Checkout undercooked
         uses: actions/checkout@v2
         with:
           path: undercooked
-
-      - name: Setup ninja build system
-        uses: ashutoshvarma/setup-ninja@master
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-        with:
-          version: 1.10.2
 
       - name: Build undercooked
         working-directory: undercooked
