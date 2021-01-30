@@ -18,14 +18,16 @@ A cooking game for the 1989 Nintendo Game Boy (DMG-01). Should run on later mode
 
 prerequisite packages:
 
-package     | purpose
------------ | -------
-rgbds       | toolchain for cross-compiling for the gameboy architecture
-imagemagick | image correction tasks for sprites and tiles
-ninja       | build system
-python3     | build system
+package       | purpose
+------------- | -------
+rgbds         | toolchain for cross-compiling for the gameboy architecture
+imagemagick   | image correction tasks for sprites and tiles
+ninja         | build system
+python3       | build system
+python-poetry | build system
 
-1. run `./build.py`
+1. run `./build`
+2. run gameboy ROM at `obj/main.gb`
 
 ## playing
 
@@ -35,9 +37,9 @@ python3     | build system
 
 ## developing
 
-1. run `./build.py`
+1. run `./build`
 2. run `bgb -nobatt -watch obj/main.gb` to play it
-3. now every time you run `./build.py`, bgb will reload the newly built ROM
+3. now every time you run `./build`, bgb will reload the newly built ROM
 
 ## naming conventions
 

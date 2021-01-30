@@ -46,40 +46,38 @@ rule deps2dd
   description = convert Make dependency syntax into ninja dyndep syntax
   command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
 
-match src/*.asm
+## for f in inner_glob('src/*.asm')
+build obj/{{ f }}.deps: rgbasm_deps_simple src/{{ f }}.asm
+build obj/{{ f }}.dd: deps2dd obj/{{ f }}.deps
+  target = obj/{{ f }}.o
 
-build obj/$*.deps: rgbasm_deps_simple src/$*.asm
-build obj/$*.dd: deps2dd obj/$*.deps
-  target = obj/$*.o
+build obj/{{ f }}.o: rgbasm src/{{ f }}.asm || obj/{{ f }}.dd
+  dyndep = obj/{{ f }}.dd
 
-build obj/$*.o: rgbasm src/$*.asm || obj/$*.dd
-  dyndep = obj/$*.dd
+build obj/{{ f }}.gb obj/{{ f }}.sym: rgblink_rgbfix obj/{{ f }}.o
+  prefix = obj/{{ f }}
+## endfor
 
-build obj/$*.gb obj/$*.sym: rgblink_rgbfix obj/$*.o
-  prefix = obj/$*
+## for f in inner_glob('art/*_wfg.png')
+build obj/{{ f }}.png: fix_white_foreground art/{{ f }}_wfg.png
+build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}.png
+## endfor
 
-match art/*_wfg.png
+## for f in inner_glob('art/*_sprite_wfg_to16.gif')
+build obj/{{ f }}_sprite_wfg_to16.png: stack_frames art/{{ f }}_sprite_wfg_to16.gif
+build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
+build obj/{{ f }}_sprite.png: fix_white_foreground obj/{{ f }}_sprite_wfg.png
+build obj/{{ f }}.2bpp obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_sprite_wfg.png
+  prefix = obj/{{ f }}
+## endfor
 
-build obj/$*.png: fix_white_foreground art/$*_wfg.png
-build obj/$*.2bpp: rgbgfx obj/$*.png
+## for f in inner_glob('art/*_bg.png')
+build obj/{{ f }}.2bpp obj/{{ f }}.tilemap: rgbgfx_background art/{{ f }}_bg.png
+  prefix = obj/{{ f }}
+## endfor
 
-match art/*_sprite_wfg_to16.gif
-
-build obj/$*_sprite_wfg_to16.png: stack_frames art/$*_sprite_wfg_to16.gif
-build obj/$*_sprite_wfg.png: fix_width obj/$*_sprite_wfg_to16.png
-build obj/$*_sprite.png: fix_white_foreground obj/$*_sprite_wfg.png
-build obj/$*.2bpp obj/$*.tilemap obj/$*.attrmap: rgbgfx_sprite obj/$*_sprite_wfg.png
-  prefix = obj/$*
-
-match art/*_bg.png
-
-build obj/$*.2bpp obj/$*.tilemap: rgbgfx_background art/$*_bg.png
-  prefix = obj/$*
-
-match art/*.png
-
-build obj/$*.2bpp: rgbgfx art/$*.png
-
-verbatim
+## for f in inner_glob('art/*.png')
+build obj/{{ f }}.2bpp: rgbgfx art/{{ f }}.png
+## endfor
 
 default obj/main.gb

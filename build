@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = clean ]; then
+  echo removing build output
+  rm -rf obj
+  exit 0
+fi
+
+mkdir -p obj
+
+(
+  cd meta
+  if ! [ -d .venv ]; then
+    echo installing jinja2
+    poetry install
+  fi
+
+  echo rendering build.ninja
+  poetry run ./jinja2_render.py .. < build.ninja.j2 > ../obj/build.ninja
+)
+
+echo running ninja
+ninja -f obj/build.ninja "$@"

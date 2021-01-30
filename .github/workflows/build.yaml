@@ -11,9 +11,9 @@ jobs:
         with:
           path: undercooked
 
-      - name: Test build.ninja generator
-        working-directory: undercooked
-        run: python3 -m doctest -v build.py
+      - name: Test jinja2 template renderer
+        working-directory: undercooked/meta
+        run: python3 -m doctest -v jinja2_render.py
 
   build:
     runs-on: ubuntu-20.04
@@ -62,7 +62,7 @@ jobs:
 
       - name: Build undercooked
         working-directory: undercooked
-        run: ./build.py
+        run: ./build
 
       - name: Move undercooked ROM into project directory
         working-directory: undercooked
