@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+export PIPENV_VENV_IN_PROJECT=1
 
 if [ "$1" = clean ]; then
   echo removing build output
@@ -9,6 +10,16 @@ fi
 
 mkdir -p obj
 
+if ! hash pipenv 2>/dev/null; then
+  if ! hash pip 2>/dev/null; then
+    echo please install pipenv or pip
+    exit 1
+  fi
+
+  echo installing pipenv
+  pip install -qq pipenv
+fi
+
 (
   cd meta
   if ! [ -d .venv ]; then
@@ -17,7 +28,7 @@ mkdir -p obj
   fi
 
   echo rendering build.ninja
-  poetry run ./jinja2_render.py .. < build.ninja.j2 > ../obj/build.ninja
+  pipenv run ./jinja2_render.py .. < build.ninja.j2 > ../obj/build.ninja
 )
 
 echo running ninja
