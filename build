@@ -24,7 +24,7 @@ fi
   cd meta
   if ! [ -d .venv ]; then
     echo installing jinja2
-    poetry install
+    pipenv install
   fi
 
   echo rendering build.ninja
