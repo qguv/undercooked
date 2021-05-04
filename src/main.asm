@@ -73,13 +73,13 @@ include "src/smt.asm"
 ; OAM DMA (put this in HIRAM) ;
 ;_____________________________;
 
-RUN_DMA_HRAM_SRC			; 5 bytes	9 clocks
+RUN_DMA_HRAM_SRC:			; 5 bytes	9 clocks
 	ldh [c],a			; 1 byte	2 clocks
-RUN_DMA_HRAM_SRC_LOOP
+RUN_DMA_HRAM_SRC_LOOP:
 	dec b				; 1 byte	1 clock
 	jr nz,RUN_DMA_HRAM_SRC_LOOP	; 2 bytes	2 clocks
 	ret				; 1 byte	4 clocks
-RUN_DMA_HRAM_SRC_END
+RUN_DMA_HRAM_SRC_END:
 
 ;----------------,
 ; Allocated HRAM ;
@@ -625,7 +625,7 @@ pulsenote: macro
 
 	reti
 
-Wavetable
+Wavetable:
 	db $89,$ab,$cd,$ef,$fe,$dc,$ba,$98,$76,$54,$32,$10,$01,$23,$45,$67
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

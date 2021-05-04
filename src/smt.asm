@@ -22,7 +22,7 @@ SMT_ROM_BYTES equ 10	; size of an SMT entry in ROM (in bytes)
 ; (byte 2) frames, (byte 3) current/initial frame
 ; (bytes 4-5) tiles table (bytes 6-7) flags table
 ; (bytes 8 and 9) y and x position (ROM only)
-SmtRom
+SmtRom:
 
 	; left stove eye
 	db	SMTF_ACTIVE|SMTF_WORLD_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
@@ -94,9 +94,9 @@ SmtRom
 	dw	SouthwardLegAnimTab,SouthwardRLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-SmtRomEnd
+SmtRomEnd:
 
-StarAnimTab
+StarAnimTab:
 	db StarBeginIndex+0
 	db StarBeginIndex+1
 	db StarBeginIndex+2
@@ -106,47 +106,47 @@ StarAnimTab
 	db StarBeginIndex+6
 	db StarBeginIndex+7
 
-LStarAttrTab
+LStarAttrTab:
 	ds 8,0
 
-RStarAttrTab
+RStarAttrTab:
 	ds 8,OAMF_XFLIP
 
 ; TODO find some way to deal with tilemap files that assume the first tile in the sprite is tile 0. maybe even a preprocessing recipe to add a constant to each byte in the file? idk
-SouthwardEarAnimTab
+SouthwardEarAnimTab:
 	db SouthwardBeginIndex+0
 	db SouthwardBeginIndex+4
 
-SouthwardHeadAnimTab
+SouthwardHeadAnimTab:
 	db SouthwardBeginIndex+1
 	db SouthwardBeginIndex+5
 
-SouthwardREarAttrTab
-SouthwardRHeadAttrTab
+SouthwardREarAttrTab:
+SouthwardRHeadAttrTab:
 	ds 2,OAMF_XFLIP
 
-SouthwardLEarAttrTab
-SouthwardLHeadAttrTab
+SouthwardLEarAttrTab:
+SouthwardLHeadAttrTab:
 	ds 2,0
 
-SouthwardArmAnimTab
+SouthwardArmAnimTab:
 	db SouthwardBeginIndex+2
 	db SouthwardBeginIndex+6
 	db SouthwardBeginIndex+2
 	db SouthwardBeginIndex+7
 
-SouthwardLegAnimTab
+SouthwardLegAnimTab:
 	db SouthwardBeginIndex+3
 	db SouthwardBeginIndex+8
 	db SouthwardBeginIndex+3
 	db SouthwardBeginIndex+9
 
-SouthwardLArmAttrTab
-SouthwardLLegAttrTab
+SouthwardLArmAttrTab:
+SouthwardLLegAttrTab:
 	db 0,0,0,OAMF_XFLIP
 
-SouthwardRArmAttrTab
-SouthwardRLegAttrTab
+SouthwardRArmAttrTab:
+SouthwardRLegAttrTab:
 	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
 
 ; vim: se ft=rgbds:
