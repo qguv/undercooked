@@ -24,7 +24,7 @@ rgbds         | toolchain for cross-compiling for the gameboy architecture
 imagemagick   | image correction tasks for sprites and tiles
 ninja         | build system
 python3       | build system
-python-poetry | build system
+pipenv        | build system
 
 1. run `./build`
 2. run gameboy ROM at `obj/main.gb`
