@@ -2,7 +2,7 @@ include "lib/gbhw.inc"		; hardware descriptions
 include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
 
-section "Org $100",ROM0[$100]
+section "main",ROM0[$100]
 	nop
 	jp	begin
 
@@ -69,6 +69,7 @@ include "src/smt.asm"
 ; OAM DMA (put this in HIRAM) ;
 ;_____________________________;
 
+; TODO: use a "load" section, see `man 5 rgbasm` section "RAM Code"
 RUN_DMA_HRAM_SRC:			; 5 bytes	9 clocks
 	ldh [c],a			; 1 byte	2 clocks
 RUN_DMA_HRAM_SRC_LOOP:
