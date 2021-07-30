@@ -7,8 +7,11 @@ rule self
 rule rgbasm
   command = rgbasm -v -E -o $out $in
 
-rule rgblink_rgbfix
-  command = rgblink -n $prefix.sym -o $prefix.gb $in && rgbfix -v -p 0 $prefix.gb
+rule rgblink
+  command = rgblink -n $symbols -o $out $in
+
+rule rgbfix
+  command = cp $in $out && rgbfix -v -p 0 $out
 
 rule rgbgfx
   description = format image for gameboy
@@ -32,19 +35,20 @@ rule count_frames
 
 rule rgbgfx_background
   description = extract unique tiles from background image
-  command = rgbgfx --unique-tiles --tilemap $prefix.tilemap --output $prefix.2bpp $in
+  command = rgbgfx --unique-tiles --tilemap $tilemap --output $out $in
 
 rule rgbgfx_sprite
   description = extract unique and mirrored tiles from sprite image
-  command = rgbgfx --mirror-tiles --tilemap $prefix.tilemap --attr-map $prefix.attrmap --output $prefix.2bpp $in
-
-rule rgbasm_deps_simple
-  description = list files included when building this file (using sed)
-  command = sed -n 's/^.*inc\(lude\|bin\) "\([^"]*\)".*$$/\2/p' $in > $out
+  command = rgbgfx --mirror-tiles --tilemap $tilemap --attr-map $attrmap --output $out $in
 
 rule rgbasm_deps
-  description = list files included when building this file (using rgbasm, but this crashes after the first one)
-  command = rgbasm -M $out -MT '' -MG $in
+  description = list files included when building this file (using sed)
+  command = sed -n 's/^\([^;]*\s\)\?inc\(lude\|bin\) "\([^"]*\)".*$$/\3/p' $in > $out
+
+# FIXME: rgbasm this crashes after the first one
+#rule rgbasm_deps
+#  description = list files included when building this file (using rgbasm, but this crashes after the first one)
+#  command = rgbasm -M $out -MT '' -MG $in
 
 rule deps2dd
   description = convert Make dependency syntax into ninja dyndep syntax
@@ -53,15 +57,12 @@ rule deps2dd
 build | build.ninja: self | meta/build.ninja.j2 configure
 
 ## for f in inner_glob('src/*.asm')
-build obj/{{ f }}.deps: rgbasm_deps_simple src/{{ f }}.asm
+build obj/{{ f }}.deps: rgbasm_deps src/{{ f }}.asm
 build obj/{{ f }}.dd: deps2dd obj/{{ f }}.deps
   target = obj/{{ f }}.o
 
 build obj/{{ f }}.o: rgbasm src/{{ f }}.asm || obj/{{ f }}.dd
   dyndep = obj/{{ f }}.dd
-
-build obj/{{ f }}.gb obj/{{ f }}.sym: rgblink_rgbfix obj/{{ f }}.o
-  prefix = obj/{{ f }}
 ## endfor
 
 ## for f in inner_glob('art/*_wfg.png')
@@ -73,18 +74,24 @@ build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}.png
 build obj/{{ f }}_sprite_wfg_to16.png: stack_frames art/{{ f }}_sprite_wfg_to16.gif
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
 build obj/{{ f }}_sprite.png: fix_white_foreground obj/{{ f }}_sprite_wfg.png
-build obj/{{ f }}.2bpp obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_sprite_wfg.png
-  prefix = obj/{{ f }}
+build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_sprite_wfg.png
+  tilemap = obj/{{ f }}.tilemap
+  attrmap = obj/{{ f }}.attrmap
 ## endfor
 
 ## for f in inner_glob('art/*_bg.png')
-build obj/{{ f }}.2bpp obj/{{ f }}.tilemap: rgbgfx_background art/{{ f }}_bg.png
-  prefix = obj/{{ f }}
+build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap: rgbgfx_background art/{{ f }}_bg.png
+  tilemap = obj/{{ f }}.tilemap
 ## endfor
 
 ## for f in inner_glob('art/*.png')
 build obj/{{ f }}.2bpp: rgbgfx art/{{ f }}.png
 ## endfor
+
+build obj/main.raw.gb | obj/main.sym: rgblink obj/main.o
+  symbols = obj/main.sym
+
+build obj/main.gb: rgbfix obj/main.raw.gb
 
 default obj/main.gb
 

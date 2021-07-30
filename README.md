@@ -39,6 +39,7 @@ pipenv        | build system
 ## developing
 
 - if you run with `bgb -nobatt -watch obj/main.gb`, bgb will reload the newly built ROM whenever you run `ninja` to compile
+- if you add (or remove) a source file and want to link it into the built ROM (or remove the link), edit the `build obj/main.gb` line in `meta/build.ninja.j2`
 - run `./configure` again if you ever need to rebuild the build system
 
 ## naming conventions
