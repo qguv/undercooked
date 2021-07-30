@@ -8,7 +8,6 @@ section "Org $100",ROM0[$100]
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-include "lib/memory.asm"
 include "src/music.asm"
 
 ;------------------------,
