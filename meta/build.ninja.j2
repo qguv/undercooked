@@ -74,7 +74,7 @@ build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}.png
 build obj/{{ f }}_sprite_wfg_to16.png: stack_frames art/{{ f }}_sprite_wfg_to16.gif
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
 build obj/{{ f }}_sprite.png: fix_white_foreground obj/{{ f }}_sprite_wfg.png
-build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_sprite_wfg.png
+build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_sprite.png
   tilemap = obj/{{ f }}.tilemap
   attrmap = obj/{{ f }}.attrmap
 ## endfor
