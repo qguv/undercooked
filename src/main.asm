@@ -2,8 +2,6 @@ include "lib/gbhw.inc"		; hardware descriptions
 include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
 
-include "src/interrupts.asm"
-
 section "Org $100",ROM0[$100]
 	nop
 	jp	begin

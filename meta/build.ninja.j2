@@ -88,7 +88,7 @@ build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap: rgbgfx_background art/{{ f }}_bg.p
 build obj/{{ f }}.2bpp: rgbgfx art/{{ f }}.png
 ## endfor
 
-build obj/main.raw.gb | obj/main.sym: rgblink obj/main.o
+build obj/main.raw.gb | obj/main.sym: rgblink obj/main.o obj/interrupts.o
   symbols = obj/main.sym
 
 build obj/main.gb: rgbfix obj/main.raw.gb
