@@ -2,7 +2,7 @@ include "lib/gbhw.inc"		; hardware descriptions
 include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
 
-section "main",ROM0[$100]
+section "init",ROM0[$100]
 	nop
 	jp	begin
 
@@ -84,60 +84,53 @@ endl
 ; Allocated HRAM ;
 ;________________'
 
-		rsset _HIRAM + (DMA.end - DMA)
-HRAM_GLOBALS	rb 0
-buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
-song_repeated	rb 1		; when the song repeats for the first time, start scrolling
-spr_index	rb 1		; used to loop through animating/moving sprites
-note_dur	rb 1		; counter for frames within note
-note_swindex	rb 1		; index into the swing table
-note_index	rb 1		; index of note in song
-duration	rb 1		; how many vblank frames of the current directive are left
-vram_ringl	rb 1		; VRAM last loaded tile width index on the left (wraps around)
-vram_ringr	rb 1		; VRAM last loaded tile width index on the right (wraps around)
-maploadl	rb 1		; column index of vram_ringl (signed)
-maploadr	rb 1		; column index of vram_ringr (signed)
-dx		rb 1		; $ff moving left, $01 moving right
-dy		rb 1		; $ff moving up, $01 moving down	; TODO: combine this with dx into a bitmap
-lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
-lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
+section "variables",HRAM
+HRAM_BEGIN:
 
-tmp1		rb 1
-tmp2		rb 1
+buttons:	db		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
+song_repeated:	db		; when the song repeats for the first time, start scrolling
+spr_index:	db		; used to loop through animating/moving sprites
+note_dur:	db		; counter for frames within note
+note_swindex:	db		; index into the swing table
+note_index:	db		; index of note in song
+duration:	db		; how many vblank frames of the current directive are left
+vram_ringl:	db		; VRAM last loaded tile width index on the left (wraps around)
+vram_ringr:	db		; VRAM last loaded tile width index on the right (wraps around)
+maploadl:	db		; column index of vram_ringl (signed)
+maploadr:	db		; column index of vram_ringr (signed)
+dx:		db		; $ff moving left, $01 moving right
+dy:		db		; $ff moving up, $01 moving down	; TODO: combine this with dx into a bitmap
+lfootx:		db		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
+lfooty:		db		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
 
-; character look direction: SOUTHWARD, WESTWARD, NORTHWARD, EASTWARD
-direction	rb 1
+tmp1:		db
+tmp2:		db
+
+direction:	db		; character look direction: SOUTHWARD, WESTWARD, NORTHWARD, EASTWARD
 SOUTHWARD	equ 0
 WESTWARD	equ 1
 NORTHWARD	equ 2
 EASTWARD	equ 3
 
-HRAM_GLOBALS_END	rb 0
-if HRAM_GLOBALS_END > $fffe
-	fail "Allocated HIRAM exceeds available HIRAM space!"
-endc
+HRAM_END:
 
 ;-------------------,
 ; Allocated Low RAM ;
 ;___________________'
 
-		rsset _RAM
-
 ; OAM RAM buffer, copied to OAM RAM at each vblank
-OAM_BUF		rb $a0
+section "OAM buffer",WRAM0
+OAM_BUF:	ds $a0
 
 ; sprite meta-table, holding sprite animation and movement metadata
-SMT_RAM		rb ((SmtRomEnd - SmtRom) / SMT_ROM_BYTES) * SMT_RAM_BYTES
-
-; end of pre-allocated RAM; the rest is stack space
-_RAM_END	rb 0
-if _RAM_END > $dfff
-	fail "Allocated RAM exceeds available RAM space!"
-endc
+section "sprite meta-table",WRAM0
+SMT_RAM:	ds ((SmtRomEnd - SmtRom) / SMT_ROM_BYTES) * SMT_RAM_BYTES
 
 ;-------------,
 ; Entry point ;
 ;_____________'
+
+section "main",ROM0
 
 begin::
 	di
@@ -179,8 +172,8 @@ begin::
 
 	; zero out allocated HRAM
 	ldz
-	ld	hl,HRAM_GLOBALS
-	ld	bc,(HRAM_GLOBALS_END - HRAM_GLOBALS)
+	ld	hl,HRAM_BEGIN
+	ld	bc,(HRAM_END - HRAM_BEGIN)
 	call	mem_Set
 
 	; enable sound registers
