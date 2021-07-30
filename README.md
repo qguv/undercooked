@@ -24,7 +24,6 @@ rgbds         | toolchain for cross-compiling for the gameboy architecture
 imagemagick   | image correction tasks for sprites and tiles
 ninja         | build system
 python3       | build system
-pipenv        | build system
 
 1. run `./configure` to prepare build system (you only have to do this once)
 2. run `ninja` to compile
