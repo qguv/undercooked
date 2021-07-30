@@ -1,5 +1,4 @@
 include "lib/gbhw.inc"		; hardware descriptions
-include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
 include "src/smt.inc"		; sprite meta-table constants
 include "src/tiles.inc"		; tile constants

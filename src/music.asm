@@ -1,5 +1,3 @@
-section "music",ROM0
-
 c2_freq equ 44
 cs2_freq equ 156
 d2_freq equ 262
@@ -76,6 +74,8 @@ a4	rb 1
 as4	rb 1
 b4	rb 1
 KILL	equ $ff
+
+section "music",ROM0
 
 NoteFreqs:
 	dw	c2_freq, cs2_freq, d2_freq, ds2_freq, \

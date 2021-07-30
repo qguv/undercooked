@@ -16,7 +16,6 @@
 ; (bytes 8 and 9) y and x position (ROM only)
 
 include "lib/gbhw.inc"		; hardware descriptions
-include "lib/debug.inc"		; debug instructions for bgb
 include "src/smt.inc"		; constants
 include "src/tiles.inc"		; tile constants
 
