@@ -17,30 +17,6 @@ CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 SONG_LENGTH equ 32		; number of NOTES not BYTES
 
-;-------,
-; Tiles ;
-;_______'
-
-Tileset: incbin "obj/house.2bpp"
-
-; the tile indices of all the tiles you should be able to walk on
-nonlava:
-	db	$89						; kitchen tile
-	db	$4e, $4f, $5e, $5f				; wood
-	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
-	db	$63, $74, $86, $a0				; carpet, right edge
-nonlava_end:
-
-Tilemap: incbin "obj/house.tilemap"
-TilemapEnd:
-
-Blacktile:
-	ds SCRN_TILE_B, $ff
-
-Star: incbin "obj/star.2bpp"
-
-Southward: incbin "obj/southward.2bpp"
-
 ;-----------------------------;
 ; OAM DMA (put this in HIRAM) ;
 ;_____________________________;
