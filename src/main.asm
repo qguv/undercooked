@@ -85,8 +85,6 @@ endl
 ;________________'
 
 section "variables",HRAM
-HRAM_BEGIN:
-
 buttons:	db		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated:	db		; when the song repeats for the first time, start scrolling
 spr_index:	db		; used to loop through animating/moving sprites
@@ -111,8 +109,6 @@ SOUTHWARD	equ 0
 WESTWARD	equ 1
 NORTHWARD	equ 2
 EASTWARD	equ 3
-
-HRAM_END:
 
 ;-------------------,
 ; Allocated Low RAM ;
@@ -167,13 +163,13 @@ begin::
 	; copy DMA code to hram
 	ld	hl,DMACode
 	ld	de,DMA
-	ld	bc,(DMA.end - DMA)
+	ld	bc,sizeof("DMA")
 	call	mem_Copy
 
 	; zero out allocated HRAM
 	ldz
-	ld	hl,HRAM_BEGIN
-	ld	bc,(HRAM_END - HRAM_BEGIN)
+	ld	hl,startof("variables")
+	ld	bc,sizeof("variables")
 	call	mem_Set
 
 	; enable sound registers
