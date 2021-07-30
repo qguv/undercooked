@@ -69,21 +69,22 @@ include "src/smt.asm"
 ; OAM DMA (put this in HIRAM) ;
 ;_____________________________;
 
-; TODO: use a "load" section, see `man 5 rgbasm` section "RAM Code"
-RUN_DMA_HRAM_SRC:			; 5 bytes	9 clocks
-	ldh [c],a			; 1 byte	2 clocks
-RUN_DMA_HRAM_SRC_LOOP:
-	dec b				; 1 byte	1 clock
-	jr nz,RUN_DMA_HRAM_SRC_LOOP	; 2 bytes	2 clocks
-	ret				; 1 byte	4 clocks
-RUN_DMA_HRAM_SRC_END:
+DMACode:
+load "DMA",HRAM
+DMA:				; 5 bytes total	9 clocks total
+	ldh [c],a		; 1 byte	2 clocks
+.loop
+	dec b			; 1 byte	1 clock
+	jr nz,.loop		; 2 bytes	2 clocks
+	ret			; 1 byte	4 clocks
+.end
+endl
 
 ;----------------,
 ; Allocated HRAM ;
 ;________________'
 
-		rsset _HIRAM
-run_dma_hram	rb (RUN_DMA_HRAM_SRC_END - RUN_DMA_HRAM_SRC)
+		rsset _HIRAM + (DMA.end - DMA)
 HRAM_GLOBALS	rb 0
 buttons		rb 1		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated	rb 1		; when the song repeats for the first time, start scrolling
@@ -171,9 +172,9 @@ begin::
 	call	mem_Set
 
 	; copy DMA code to hram
-	ld	hl,RUN_DMA_HRAM_SRC
-	ld	de,run_dma_hram
-	ld	bc,(RUN_DMA_HRAM_SRC_END - RUN_DMA_HRAM_SRC)
+	ld	hl,DMACode
+	ld	de,DMA
+	ld	bc,(DMA.end - DMA)
 	call	mem_Copy
 
 	; zero out allocated HRAM
@@ -363,7 +364,7 @@ VBlank::
 	; start OAM DMA
 	ld a, OAM_BUF / $100
 	ld bc,$2946		; b: wait time, c: OAM trigger
-	call run_dma_hram
+	call DMA
 
 	pop	hl
 	pop	de
