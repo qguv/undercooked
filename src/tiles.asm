@@ -5,21 +5,23 @@ ShowTiles:
 	jp	z,CheckShowTilesR
 	cp	$ff		; else if (dx == -1) { return ShowTilesL(); }
 	jp	z,CheckShowTilesL
-	ret			; else { return; }
+	ret
 
 ; do we need to load new tiles to the right?
 CheckShowTilesR:
-	ld	a,[rSCX]	; b <- about-to-be-seen rightmost column
-rept 3
+	ld	a,[rSCX]	; a <- about-to-be-seen rightmost pixel
+if SCRN_VX != $100
+	fail	"relying on overflow"
+endc
+	add	SCRN_X
+rept 3				; b <- about-to-be-seen rightmost vram column
 	srl	a
 endr
-	add	SCRN_X_B
-	and	SCRN_VX_B - 1
 	ld	b,a
 	ld	a,[vram_ringr]	; if (rightmost loaded column != about-to-be-seen rightmost column) { return; }
 	cp	b
 	ret	nz
-	call	ShowTilesR
+	call	ShowTilesR	; ShowTilesR();
 	ld	a,[vram_ringr]	; b <- new rightmost loaded column
 	ld	b,a
 	ld	a,[vram_ringl]	; if (leftmost loaded column == new rightmost loaded column) { return UnloadTilesL(); }
@@ -29,17 +31,19 @@ endr
 
 ; do we need to load new tiles to the left?
 CheckShowTilesL:
-	ld	a,[rSCX]	; b <- about-to-be-seen leftmost column
-rept 3
+	ld	a,[rSCX]	; a <- about-to-be-seen leftmost pixel
+if SCRN_VX != $100
+	fail	"relying on overflow"
+endc
+	sub	8
+rept 3				; b <- about-to-be-seen leftmost column
 	srl	a
 endr
-	add	SCRN_VX_B - 1
-	and	SCRN_VX_B - 1
 	ld	b,a
 	ld	a,[vram_ringl]	; if (leftmost loaded column != about-to-be-seen leftmost column) { return; }
 	cp	b
 	ret	nz
-	call	ShowTilesL
+	call	ShowTilesL	; ShowTilesL();
 	ld	a,[vram_ringl]	; b <- new leftmost loaded column
 	ld	b,a
 	ld	a,[vram_ringr]	; if (rightmost loaded column == new leftmost loaded column) { return UnloadTilesR(); }
@@ -47,64 +51,39 @@ endr
 	jp	z,UnloadTilesR
 	ret
 
-; load another column of tiles to the left of the last left-loaded column
+; load another column of tiles to the right of the last right-loaded column
 ShowTilesR:
-	ld	a,[vram_ringr]	; rightmost loaded column++ mod SCRN_VX_B
+	ld	a,[vram_ringr]	; b <- rightmost loaded vram column++ mod SCRN_VX_B
 	inc	a
 	and	SCRN_VX_B - 1
+	ld	b,a
 	ld	[vram_ringr],a
-	ld	a,[maploadr]	; rightmost loaded map position++
+	ld	a,[maploadr]	; c <- rightmost loaded map column
 	inc	a
 	ld	[maploadr],a
-	call	UpdateRightOob
-	ld	a,[map_oob]	; if (out of bounds on the right) { return ShowBlankTilesR(); }
-	and	MAP_OOB_RIGHT
-	jp	nz,ShowBlankTilesR
-	ld	a,[vram_ringr]		; b <- rightmost VRAM column
-	ld	b,a
-	ld	a,[maploadr]		; c <- rightmost map column
 	ld	c,a
+	cp	LEVEL_WIDTH	; if (rightmost loaded map column >= LEVEL_WIDTH)
+	jp	nc,ShowBlankTilesR	; return ShowBlankTilesR();
+	ld	a,c		; return ShowRealTiles(leftmost loaded map column, leftmost loaded vram column);
 	jp	ShowRealTiles__ab
-	;ret
+	; ret
 
 ; load another column of tiles to the left of the last left-loaded column
 ShowTilesL:
-	ld	a,[vram_ringl]	; leftmost loaded column-- mod SCRN_VX_B
+	ld	a,[vram_ringl]	; b <- --leftmost loaded vram column mod SCRN_VX_B
 	add	SCRN_VX_B - 1
 	and	SCRN_VX_B - 1
-	ld	[vram_ringl],a
-	ld	a,[maploadl]	; leftmost loaded map position--
-	dec	a
-	ld	[maploadl],a
-	call UpdateLeftOob
-	ld	a,[map_oob]	; if (out of bounds on the left) { return ShowBlankTilesL(); }
-	and	MAP_OOB_LEFT
-	jp	nz,ShowBlankTilesL
-	ld	a,[vram_ringl]		; b <- leftmost VRAM column
 	ld	b,a
-	ld	a,[maploadl]		; a <- leftmost map column
+	ld	[vram_ringl],a
+	ld	a,[maploadl]	; c <- --leftmost loaded map column
+	dec	a
+	ld	c,a
+	ld	[maploadl],a
+	and	$80		; if ((signed) leftmost loaded map column < 0)
+	jp	nz,ShowBlankTilesL	; return ShowBlankTilesL();
+	ld	a,c		; return ShowRealTiles(leftmost loaded map column, leftmost loaded vram column);
 	jp	ShowRealTiles__ab
 	;ret
-
-UpdateRightOob:
-	ld	a,[maploadr]	; if (maploadr != LEVEL_WIDTH) { return; }
-	cp	LEVEL_WIDTH
-	ret	nz
-	ld	b,MAP_OOB_RIGHT	; map oob right = true
-	ld	a,[map_oob]
-	or	b
-	ld	[map_oob],a
-	ret
-
-UpdateLeftOob:
-	ld	a,[maploadl]	; if (maploadl != -1) { return; }
-	inc	a
-	ret	nz
-	ld	b,MAP_OOB_LEFT	; map oob left = true
-	ld	a,[map_oob]
-	or	b
-	ld	[map_oob],a
-	ret
 
 UnloadTilesL:
 	ld	a,[vram_ringl]	; vram_ringl++ mod SCRN_VX_B
@@ -114,11 +93,6 @@ UnloadTilesL:
 	ld	a,[maploadl]	; maploadl++
 	inc	a
 	ld	[maploadl],a
-	cpz			; if (maploadl != 0) { return; }
-	ret	z
-	ld	a,[map_oob]	; map_oob_left = false;
-	and	~MAP_OOB_LEFT
-	ld	[map_oob],a
 	ret
 
 UnloadTilesR:
@@ -129,11 +103,6 @@ UnloadTilesR:
 	ld	a,[maploadr]	; maploadr--
 	dec	a
 	ld	[maploadr],a
-	cp	LEVEL_WIDTH - 1	; if (maploadr != LEVEL_WIDTH - 1) { return; }
-	ret	z
-	ld	a,[map_oob]	; map_oob_right = false;
-	and	~MAP_OOB_RIGHT
-	ld	[map_oob],a
 	ret
 
 ShowBlankTilesR:

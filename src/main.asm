@@ -97,13 +97,10 @@ note_index	rb 1		; index of note in song
 duration	rb 1		; how many vblank frames of the current directive are left
 vram_ringl	rb 1		; VRAM last loaded tile width index on the left (wraps around)
 vram_ringr	rb 1		; VRAM last loaded tile width index on the right (wraps around)
-maploadl	rb 1
-maploadr	rb 1
-map_oob		rb 1		; lsb = whether right side oob, 2nd lsb = whether left side oob
-MAP_OOB_LEFT	set 2
-MAP_OOB_RIGHT	set 1
-dx		rb 1
-dy		rb 1
+maploadl	rb 1		; column index of vram_ringl (signed)
+maploadr	rb 1		; column index of vram_ringr (signed)
+dx		rb 1		; $ff moving left, $01 moving right
+dy		rb 1		; $ff moving up, $01 moving down	; TODO: combine this with dx into a bitmap
 lfootx		rb 1		; x position of left foot wrt the map, 0 is the furthest left you can go without hitting the wall
 lfooty		rb 1		; y position of left foot wrt the map, 0 is the furthest up you can go without hitting your head
 
