@@ -3,7 +3,7 @@ set -e
 export PIPENV_VENV_IN_PROJECT=1
 
 deps_missing=0
-for dep in rgbasm magick ninja python3; do
+for dep in rgbasm convert ninja python3; do
   if ! hash $dep; then
     echo please install $dep
     deps_missing=1
