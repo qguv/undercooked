@@ -1,6 +1,8 @@
 include "lib/gbhw.inc"		; hardware descriptions
 include "lib/debug.inc"		; debug instructions for bgb
 include "src/optim.inc"		; optimized instruction aliases
+include "src/smt.inc"		; sprite meta-table constants
+include "src/tiles.inc"		; tile constants
 
 section "init",ROM0[$100]
 	nop
@@ -12,9 +14,6 @@ section "init",ROM0[$100]
 ; Configurable constants ;
 ;________________________'
 
-TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-numbered tiles (useful for 8x16 sprites)
-LEVEL_WIDTH equ 40
-LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL_WIDTH)
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 SONG_LENGTH equ 32		; number of NOTES not BYTES
@@ -23,20 +22,7 @@ SONG_LENGTH equ 32		; number of NOTES not BYTES
 ; Tiles ;
 ;_______'
 
-TILE_NUM set 0
-
-; label name, number of frames, tiles per frame
-registertiles: macro
-\1Frames equ (\2)
-\1BeginIndex equ TILE_NUM
-TILE_NUM set TILE_NUM + \1Frames
-if TWO_TILE_ALIGN
-TILE_NUM set TILE_NUM + (TILE_NUM % 2)
-endc
-	endm
-
 Tileset: incbin "obj/house.2bpp"
-	registertiles	Tileset,$a1,1
 
 ; the tile indices of all the tiles you should be able to walk on
 nonlava:
@@ -51,19 +37,10 @@ TilemapEnd:
 
 Blacktile:
 	ds SCRN_TILE_B, $ff
-	registertiles Blacktile,1
 
 Star: incbin "obj/star.2bpp"
-	registertiles Star,8
 
 Southward: incbin "obj/southward.2bpp"
-	registertiles Southward,10
-
-;-------------------,
-; Sprite Meta-Table ;
-;___________________'
-
-include "src/smt.inc"
 
 ;-----------------------------;
 ; OAM DMA (put this in HIRAM) ;
@@ -119,8 +96,8 @@ section "OAM buffer",WRAM0
 OAM_BUF:	ds $a0
 
 ; sprite meta-table, holding sprite animation and movement metadata
-section "sprite meta-table",WRAM0
-SMT_RAM:	ds ((SmtRomEnd - SmtRom) / SMT_ROM_BYTES) * SMT_RAM_BYTES
+section "RAM SMT",WRAM0
+SMT_RAM:	ds SMT_ENTRIES * SMT_RAM_BYTES
 
 ;-------------,
 ; Entry point ;
@@ -242,9 +219,9 @@ endr
 	ld	[lfooty],a
 
 	; copy ROM SMT to RAM SMT and set OAM where needed
-	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
+	ld	a,SMT_ENTRIES
 	ld	[spr_index],a
-	ld	hl,SmtRom
+	ld	hl,startof("ROM SMT")
 	ld	bc,SMT_RAM
 	ld	de,OAM_BUF
 .smt_row
@@ -336,10 +313,6 @@ endr
 	ld	A,P1F_5|P1F_4	; deselect P14 and P15
 	ld	[rP1],A		; RESET Joypad
 	ret			; Return from Subroutine
-
-; TODO start using linker for these to avoid including unneeded subroutines
-include "src/tiles.inc"
-include "src/sprites.inc"
 
 ; Initiate a DMA transfer from OAM_BUF to the real OAM. The vblank period is
 ; the only time we can do this without bugs. Called each frame by the vblank

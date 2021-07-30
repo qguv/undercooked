@@ -1,3 +1,8 @@
+include "src/optim.inc"		; optimized instruction aliases
+include "src/smt.inc"		; sprite meta-table constants
+
+section "sprites",ROM0
+
 ; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
 ; arg a: sprite index in RAM SMT
 SpriteRecalculate__a:
@@ -16,7 +21,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteRecalculate__a in src/sprites.asm no longer applies!"
+fail strfmt("[%s:%d] optimization for `a *= SMT_RAM_BYTES` via rotation no longer applies!", __FILE__, __LINE__)
 endc
 rept 3					; hl <- &SMT[sprite_index].anim_counter
 	inc	a
@@ -51,7 +56,7 @@ endr
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
 SpriteRecalculateAll:
-	ld	a,((SmtRomEnd - SmtRom) / SMT_ROM_BYTES)
+	ld	a,SMT_ENTRIES
 .loop
 	dec	a
 	push	af
@@ -63,7 +68,7 @@ SpriteRecalculateAll:
 ; Update each sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
 ; TODO check here for SMTF_ACTIVE; that way we can paint new sprites over inactive ones
 SpriteUpdateAll:
-	ld	a,(SmtRomEnd - SmtRom) / SMT_ROM_BYTES
+	ld	a,SMT_ENTRIES
 .loop
 	dec	a
 	push	af
@@ -82,7 +87,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteUpdate__a in src/sprites.asm no longer applies!"
+fail strfmt("[%s:%d] optimization for `a *= SMT_RAM_BYTES` via rotation no longer applies!", __FILE__, __LINE__)
 endc
 	addhla
 	ld	a,[hl]			; b <- SMT[sprite_index].flags (byte 0)
@@ -162,7 +167,7 @@ rept 3
 	sla	a
 endr
 else
-fail "optimization for `a *= SMT_RAM_BYTES` via rotation in SpriteAnimate__a in src/sprites.asm no longer applies!"
+fail strfmt("[%s:%d] optimization for `a *= SMT_RAM_BYTES` via rotation no longer applies!", __FILE__, __LINE__)
 endc
 	addhla
 	inc	hl		; hl <- &SMT[i][1]
