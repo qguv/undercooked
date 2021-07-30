@@ -1,4 +1,8 @@
-ninja_required_version = 1.3
+ninja_required_version = 1.7
+
+rule self
+  command = ./configure --quiet
+  generator = true
 
 rule rgbasm
   command = rgbasm -v -E -o $out $in
@@ -46,6 +50,8 @@ rule deps2dd
   description = convert Make dependency syntax into ninja dyndep syntax
   command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
 
+build | build.ninja: self | meta/build.ninja.j2 configure
+
 ## for f in inner_glob('src/*.asm')
 build obj/{{ f }}.deps: rgbasm_deps_simple src/{{ f }}.asm
 build obj/{{ f }}.dd: deps2dd obj/{{ f }}.deps
@@ -81,3 +87,5 @@ build obj/{{ f }}.2bpp: rgbgfx art/{{ f }}.png
 ## endfor
 
 default obj/main.gb
+
+# vi: set syntax=ninja ts=2 sts=2 sw=2 et:

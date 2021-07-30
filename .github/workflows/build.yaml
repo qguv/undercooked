@@ -68,9 +68,13 @@ jobs:
         with:
           path: undercooked
 
+      - name: Prepare build system
+        working-directory: undercooked
+        run: ./configure
+
       - name: Build undercooked
         working-directory: undercooked
-        run: ./build
+        run: ninja
 
       - name: Move undercooked ROM into project directory
         working-directory: undercooked

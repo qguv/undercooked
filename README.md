@@ -26,8 +26,9 @@ ninja         | build system
 python3       | build system
 pipenv        | build system
 
-1. run `./build`
-2. run gameboy ROM at `obj/main.gb`
+1. run `./configure` to prepare build system (you only have to do this once)
+2. run `ninja` to compile
+3. run gameboy ROM at `obj/main.gb`
 
 ## playing
 
@@ -37,9 +38,8 @@ pipenv        | build system
 
 ## developing
 
-1. run `./build`
-2. run `bgb -nobatt -watch obj/main.gb` to play it
-3. now every time you run `./build`, bgb will reload the newly built ROM
+- if you run with `bgb -nobatt -watch obj/main.gb`, bgb will reload the newly built ROM whenever you run `ninja` to compile
+- run `./configure` again if you ever need to rebuild the build system
 
 ## naming conventions
 

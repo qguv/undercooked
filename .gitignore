@@ -1,4 +1,6 @@
 *.gb
 *.sav
-obj
+obj/
+build.ninja
 .ninja_log
+.ninja_deps

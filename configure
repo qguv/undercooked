@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e
+export PIPENV_VENV_IN_PROJECT=1
+
+deps_missing=0
+for dep in rgbasm magick ninja python3; do
+  if ! hash $dep; then
+    echo please install $dep
+    deps_missing=1
+  fi
+done
+if [ $deps_missing -eq 1 ]; then
+  exit 1
+fi
+
+if ! hash pipenv 2>/dev/null; then
+  if ! hash pip 2>/dev/null; then
+    echo please install pipenv or pip
+    exit 1
+  fi
+
+  echo installing pipenv
+  pip install -qq pipenv
+fi
+
+(
+  cd meta
+  if ! [ -d .venv ]; then
+    echo installing jinja2
+    pipenv install
+  fi
+
+  if [ "$1" != --quiet ]; then
+    echo rendering build.ninja
+  fi
+  pipenv run ./jinja2_render.py .. < build.ninja.j2 > ../build.ninja
+)
+
+if [ "$1" != --quiet ]; then
+  echo 'build system configured, now run `ninja` to compile'
+fi
