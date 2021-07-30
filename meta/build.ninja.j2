@@ -8,7 +8,7 @@ rule rgbasm
   command = rgbasm -v -E -o $out $in
 
 rule rgblink
-  command = rgblink -n $symbols -o $out $in
+  command = rgblink --tiny --wramx -n $symbols -o $out $in
 
 rule rgbfix
   command = cp $in $out && rgbfix -v -p 255 $out
