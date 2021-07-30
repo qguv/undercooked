@@ -55,4 +55,4 @@ inc_hl_safe: macro
 .inc_hl_safe_end\@
 	endm
 
-; vim: se ft=rgbds:
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

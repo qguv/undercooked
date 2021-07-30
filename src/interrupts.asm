@@ -49,3 +49,5 @@ SERIAL_VECT:
 section "Joypad IRQ Vector",ROM0[$60]
 JOYPAD_VECT:
 	reti
+
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

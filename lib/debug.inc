@@ -13,3 +13,5 @@ DBGMSG: MACRO
         ENDM
 
 ENDC ; DEBUG_INC
+
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

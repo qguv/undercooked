@@ -63,7 +63,7 @@ Southward: incbin "obj/southward.2bpp"
 ; Sprite Meta-Table ;
 ;___________________'
 
-include "src/smt.asm"
+include "src/smt.inc"
 
 ;-----------------------------;
 ; OAM DMA (put this in HIRAM) ;
@@ -338,8 +338,8 @@ endr
 	ret			; Return from Subroutine
 
 ; TODO start using linker for these to avoid including unneeded subroutines
-include "src/tiles.asm"
-include "src/sprites.asm"
+include "src/tiles.inc"
+include "src/sprites.inc"
 
 ; Initiate a DMA transfer from OAM_BUF to the real OAM. The vblank period is
 ; the only time we can do this without bugs. Called each frame by the vblank

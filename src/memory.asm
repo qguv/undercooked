@@ -158,3 +158,4 @@ mem_CopyVRAM::
 
         ENDC    ;MEMORY1_ASM
 
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

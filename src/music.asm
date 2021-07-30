@@ -108,4 +108,4 @@ NoteDuration: ; in number of vblanks, this table will be cycled
 	db	9, 7
 NoteDurationEnd:
 
-; vim: se ft=rgbds:
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

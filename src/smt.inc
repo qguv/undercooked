@@ -149,4 +149,4 @@ SouthwardRArmAttrTab:
 SouthwardRLegAttrTab:
 	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
 
-; vim: se ft=rgbds:
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

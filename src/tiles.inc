@@ -143,3 +143,5 @@ rept LEVEL_HEIGHT
 	adddea
 endr
 	ret
+
+; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
