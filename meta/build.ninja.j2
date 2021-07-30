@@ -11,7 +11,7 @@ rule rgblink
   command = rgblink -n $symbols -o $out $in
 
 rule rgbfix
-  command = cp $in $out && rgbfix -v -p 0 $out
+  command = cp $in $out && rgbfix -v -p 255 $out
 
 rule rgbgfx
   description = format image for gameboy
