@@ -2,48 +2,52 @@ ninja_required_version = 1.7
 builddir = obj/
 
 rule self
+  description = generate build definitions
   command = ./configure --quiet
   generator = true
 
 rule rgbasm
+  description = assemble $out
   command = rgbasm -E -o $out $in
 
 rule rgblink
+  description = link $out
   command = rgblink --tiny --wramx -n $symbols -o $out $in
 
 rule rgbfix
+  description = adjust checksums $out
   command = cp $in $out && rgbfix --validate -p 255 $out
 
 rule rgbgfx
-  description = format image for gameboy
+  description = format image for gameboy $out
   command = rgbgfx -o $out $in
 
 rule fix_white_foreground
-  description = correct image with white foreground
+  description = correct image with white foreground $out
   command = convert $in -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove $out
 
 rule fix_width
-  description = quantize image width
+  description = quantize image width $out
   command = convert $in -sample 16 $out
 
 rule stack_frames
-  description = vertically stack animation frames into a flat image
+  description = vertically stack animation frames into a flat image $out
   command = convert -coalesce $in -append $out
 
 rule count_frames
-  description = count frames of animation
+  description = count frames of animation $out
   command = printf '\x'"$$(printf '%02d\n' "$$(identify -format '%n\n' $in | head -n 1)")" > $out
 
 rule rgbgfx_background
-  description = extract unique tiles from background image
+  description = extract unique tiles from background image $out
   command = rgbgfx --unique-tiles --tilemap $tilemap --output $out $in
 
 rule rgbgfx_sprite
-  description = extract unique and mirrored tiles from sprite image
+  description = extract unique and mirrored tiles from sprite image $out
   command = rgbgfx --mirror-tiles --tilemap $tilemap --attr-map $attrmap --output $out $in
 
 rule rgbasm_deps
-  description = list files included when building this file (using sed)
+  description = list files included when building this file (using sed) $out
   command = sed -n 's/^\([^;]*\s\)\?inc\(lude\|bin\) "\([^"]*\)".*$$/\3/p' $in > $out
 
 # FIXME: rgbasm this crashes after the first one
@@ -52,7 +56,7 @@ rule rgbasm_deps
 #  command = rgbasm -M $out -MT '' -MG $in
 
 rule deps2dd
-  description = convert Make dependency syntax into ninja dyndep syntax
+  description = convert Make dependency syntax into ninja dyndep syntax $out
   command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
 
 build | build.ninja: self | meta/build.ninja.j2 configure
