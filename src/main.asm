@@ -8,8 +8,6 @@ section "Org $100",ROM0[$100]
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-include "src/music.asm"
-
 ;------------------------,
 ; Configurable constants ;
 ;________________________'
@@ -19,6 +17,7 @@ LEVEL_WIDTH equ 40
 LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL_WIDTH)
 CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
+SONG_LENGTH equ 32		; number of NOTES not BYTES
 
 ;-------,
 ; Tiles ;
@@ -558,7 +557,7 @@ HandleNotes:
 .dont_wrap
 	ld	[note_swindex],a
 	ld	a,[note_index]		; get note index
-	cp	a,SongLength-1		; if hPU1NoteIndex isn't zero, fine...
+	cp	a,SONG_LENGTH-1		; if hPU1NoteIndex isn't zero, fine...
 	jp	nz,.sound_registers
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
 	ld	[song_repeated],a
@@ -572,11 +571,11 @@ pulsenote: macro
 	add	hl,bc
 	ld	c,[hl]
 
-	ld	a,c			; if it's a rest, don't set any registers for this note
-	cp	REST
+	ld	a,c			; if it's a rest (note 0), don't set any registers for this note
+	cpz
 	jp	z,.end\@
 
-	cp	KILL			; if it's a kill command, stop the note
+	cp	$ff			; if it's a kill command (note $ff), stop the note
 	jp	nz,.nocut\@
 	ldz
 	ld	[\6],a
@@ -614,7 +613,7 @@ pulsenote: macro
 
 	ld	a,[note_index]	; increment index of note in song
 	inc	a
-	and	SongLength-1
+	and	SONG_LENGTH-1
 	ld	[note_index],a
 
 	reti

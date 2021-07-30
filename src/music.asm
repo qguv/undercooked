@@ -1,3 +1,5 @@
+section "music",ROM0
+
 c2_freq equ 44
 cs2_freq equ 156
 d2_freq equ 262
@@ -36,6 +38,7 @@ as4_freq equ 1767
 b4_freq equ 1783
 
 	rsreset	; this is space-sensitive for literally no reason
+REST	rb 1
 c2	rb 1
 cs2	rb 1
 d2	rb 1
@@ -72,8 +75,7 @@ gs4	rb 1
 a4	rb 1
 as4	rb 1
 b4	rb 1
-REST	rb 1
-KILL	rb 1
+KILL	equ $ff
 
 NoteFreqs:
 	dw	c2_freq, cs2_freq, d2_freq, ds2_freq, \
@@ -86,7 +88,6 @@ NoteFreqs:
 		e4_freq, f4_freq, fs4_freq, g4_freq, \
 		gs4_freq, a4_freq, as4_freq, b4_freq
 
-SongLength equ 32	; number of NOTES not BYTES
 NotesPU1:
 	db	a4,fs4,cs4,a3,gs4,e4,b3,gs3, \
 		fs4,d4,a3,fs3,a3,d4,fs4,d4, \
