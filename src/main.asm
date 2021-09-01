@@ -419,7 +419,7 @@ endc
 rept 2				; once for each foot
 	ld	a,[hl+]		; left foot tile -> e
 	ld	e,a
-	ld	d,nonlava_end-nonlava	; number of entries in nonlava table
+	ld	d,nonlava.end-nonlava	; number of entries in nonlava table
 	ld	bc,nonlava	; nonlava[] -> bc
 .nexttile\@
 	ld	a,[bc]		; nonlava[i] -> a

@@ -16,6 +16,6 @@ nonlava:
 	db	$4e, $4f, $5e, $5f				; wood
 	db	$11, $9f, $9e, $9d, $85, $73, $60, $61, $62	; carpet
 	db	$63, $74, $86, $a0				; carpet, right edge
-nonlava_end:
+.end:
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
