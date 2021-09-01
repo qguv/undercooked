@@ -72,7 +72,7 @@ OAM_BUF:	ds $a0
 
 ; sprite meta-table, holding sprite animation and movement metadata
 section "RAM SMT",WRAM0
-SMT_RAM:	ds SMT_ENTRIES * SMT_RAM_BYTES
+SMT_RAM:	ds SMT_RAM_ENTRIES * SMT_RAM_BYTES
 
 ;-------------,
 ; Entry point ;
@@ -194,7 +194,7 @@ endr
 	ld	[lfooty],a
 
 	; copy ROM SMT to RAM SMT and set OAM where needed
-	ld	a,SMT_ENTRIES
+	ld	a,SMT_RAM_ENTRIES
 	ld	[spr_index],a
 	ld	hl,startof("ROM SMT")
 	ld	bc,SMT_RAM
@@ -473,6 +473,7 @@ endr
 	ld	[rSCY],a	; rSCY += dy
 .end_movement
 
+	call SpriteLoadPlayerCharacter
 	call SpriteUpdateAll
 
 HandleNotes:

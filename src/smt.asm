@@ -35,61 +35,70 @@ section "ROM SMT",ROM0
 	dw	StarAnimTab,RStarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$2e,$6d				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat left ear
+main_char_smt_entry: macro
+
+	; cat left ear
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardEarAnimTab,SouthwardLEarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1EarAnimTab,\1LEarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat right ear
+	; cat right ear
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardEarAnimTab,SouthwardREarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1EarAnimTab,\1REarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cart left head
+	; cat left head
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardHeadAnimTab,SouthwardLHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1HeadAnimTab,\1LHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat right head
+	; cat right head
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardHeadAnimTab,SouthwardRHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1HeadAnimTab,\1RHeadAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat left arm
+	; cat left arm
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardArmAnimTab,SouthwardLArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1ArmAnimTab,\1LArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat right arm
+	; cat right arm
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardArmAnimTab,SouthwardRArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1ArmAnimTab,\1RArmAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat left leg
+	; cat left leg
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardLegAnimTab,SouthwardLLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1LegAnimTab,\1LLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	; southward cat right leg
+	; cat right leg
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
-	dw	SouthwardLegAnimTab,SouthwardRLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1LegAnimTab,\1RLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
+
+	endm
+
+	main_char_smt_entry Southward
+	main_char_smt_entry Westward
+	main_char_smt_entry Eastward
+	main_char_smt_entry Northward
 
 section "animation tables",ROM0
 
@@ -110,40 +119,49 @@ RStarAttrTab:
 	ds 8,OAMF_XFLIP
 
 ; TODO find some way to deal with tilemap files that assume the first tile in the sprite is tile 0. maybe even a preprocessing recipe to add a constant to each byte in the file? idk
-SouthwardEarAnimTab:
-	db SouthwardBeginIndex+0
-	db SouthwardBeginIndex+4
 
-SouthwardHeadAnimTab:
-	db SouthwardBeginIndex+1
-	db SouthwardBeginIndex+5
+main_char_tables: macro
+\1EarAnimTab:
+	db \1BeginIndex+0
+	db \1BeginIndex+4
 
-SouthwardREarAttrTab:
-SouthwardRHeadAttrTab:
+\1HeadAnimTab:
+	db \1BeginIndex+1
+	db \1BeginIndex+5
+
+\1REarAttrTab:
+\1RHeadAttrTab:
 	ds 2,OAMF_XFLIP
 
-SouthwardLEarAttrTab:
-SouthwardLHeadAttrTab:
+\1LEarAttrTab:
+\1LHeadAttrTab:
 	ds 2,0
 
-SouthwardArmAnimTab:
-	db SouthwardBeginIndex+2
-	db SouthwardBeginIndex+6
-	db SouthwardBeginIndex+2
-	db SouthwardBeginIndex+7
+\1ArmAnimTab:
+	db \1BeginIndex+2
+	db \1BeginIndex+6
+	db \1BeginIndex+2
+	db \1BeginIndex+7
 
-SouthwardLegAnimTab:
-	db SouthwardBeginIndex+3
-	db SouthwardBeginIndex+8
-	db SouthwardBeginIndex+3
-	db SouthwardBeginIndex+9
+\1LegAnimTab:
+	db \1BeginIndex+3
+	db \1BeginIndex+8
+	db \1BeginIndex+3
+	db \1BeginIndex+9
 
-SouthwardLArmAttrTab:
-SouthwardLLegAttrTab:
+\1LArmAttrTab:
+\1LLegAttrTab:
 	db 0,0,0,OAMF_XFLIP
 
-SouthwardRArmAttrTab:
-SouthwardRLegAttrTab:
+\1RArmAttrTab:
+\1RLegAttrTab:
 	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
+
+	endm
+
+	main_char_tables Southward
+	main_char_tables Westward
+	main_char_tables Northward
+	main_char_tables Eastward
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

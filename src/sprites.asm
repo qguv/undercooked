@@ -3,6 +3,82 @@ include "src/smt.inc"		; sprite meta-table constants
 
 section "sprites",ROM0
 
+; Load a sprite
+; arg b: source index in ROM SMT
+; arg c: dest index in RAM SMT
+; FIXME probably broken
+LoadSprite__b_c:
+
+	; calculate first ROM table entry address -> stack
+	ld	hl,startof("ROM SMT")
+.mcheck					; loop {
+	ld	a,b			;	if source index == 0; break
+	cpz
+	jp	z,.mcheck
+
+	ld	a,SMT_ROM_BYTES		;	hl <- hl + SMT_ROM_BYTES
+	addhla
+	dec	b
+	jp	.mend			; }
+.mend
+	push	hl
+
+	; calculate first RAM table entry address -> stack
+	ld	hl,SMT_RAM
+	ld	a,c
+if SMT_RAM_BYTES == 8
+rept 3
+	sla	a
+endr
+else
+fail strfmt("[%s:%d] optimization for `a *= SMT_RAM_BYTES` via rotation no longer applies!", __FILE__, __LINE__)
+endc
+	addhla
+	push hl
+
+	; calculate first OAM address -> de
+	ld	de,OAM_BUF
+	ld	a,c
+	sla	a
+	sla	a
+	adddea
+
+	pop	bc			; bc <- first RAM table entry address
+	pop	hl			; hl <- first ROM table entry address
+rept SMT_RAM_BYTES			; copy SMT entry from ROM to RAM
+	ld	a,[hl+]
+	ld	[bc],a
+	inc	bc
+endr
+rept 2					; last two SMT bytes go to the OAM buffer, not the RAM SMT
+	ld	a,[hl+]
+	ld	[de],a
+	inc	de
+endr
+	inc	de			; skip tile index (will be updated at next anim frame)
+	inc	de			; skip attributes (will be updated at next anim frame)
+
+	ret
+
+SpriteLoadPlayerCharacter:
+; FIXME new, maybe broken
+	; get index of the ROM SMT entry of the first player character sprite for this direction
+	ld	a,[direction]		; a <- direction * 8 + 2 (index of first sprite ROM SMT index of player character sprites)
+	sla	a
+	sla	a
+	sla	a
+	inc	a
+	inc	a
+	ld	b,a
+	ld	c,2
+rept SMT_PLAYER_CHARACTER_ENTRIES
+	push	bc
+	call	LoadSprite__b_c
+	inc	b
+	inc	c
+	pop	bc
+endr
+
 ; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
 ; arg a: sprite index in RAM SMT
 SpriteRecalculate__a:
@@ -56,7 +132,7 @@ endr
 
 ; Set each sprite's OAM tile index and attributes from its (RAM) SMT state.
 SpriteRecalculateAll:
-	ld	a,SMT_ENTRIES
+	ld	a,SMT_RAM_ENTRIES
 .loop
 	dec	a
 	push	af
@@ -68,7 +144,7 @@ SpriteRecalculateAll:
 ; Update each sprite's animation, then update OAM buffer with its new position, animation frame, and flags.
 ; TODO check here for SMTF_ACTIVE; that way we can paint new sprites over inactive ones
 SpriteUpdateAll:
-	ld	a,SMT_ENTRIES
+	ld	a,SMT_RAM_ENTRIES
 .loop
 	dec	a
 	push	af
