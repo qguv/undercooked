@@ -18,5 +18,8 @@ endc
 	registertiles Blacktile,1
 	registertiles Star,8
 	registertiles Southward,10
+	registertiles Westward,10
+	registertiles Northward,10
+	registertiles Eastward,10
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
