@@ -67,7 +67,7 @@ HandleNotes:
 	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
 	ld	[song_repeated],a
 
-pulsenote: macro
+macro pulsenote
 	; index the notes-in-song table with the note song-index to get the actual note value
 	ld	b,0
 	ld	a,[note_index]
@@ -110,7 +110,7 @@ pulsenote: macro
 	or	%10000000		; reset envelope (not legato)
 	ld	[\8],a			; set frequency MSB and flags
 .end\@
-	endm
+endm ; pulsenote
 
 .sound_registers
 	pulsenote	NotesPU1,%00111111,$F1,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH

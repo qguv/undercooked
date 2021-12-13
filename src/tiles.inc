@@ -5,14 +5,14 @@ LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL
 def TILE_NUM = 0
 
 ; label name, number of frames, tiles per frame
-registertiles: macro
+macro registertiles
 \1Frames equ (\2)
 \1BeginIndex equ TILE_NUM
 def TILE_NUM = TILE_NUM + \1Frames
 if TWO_TILE_ALIGN
 def TILE_NUM = TILE_NUM + (TILE_NUM % 2)
 endc
-	endm
+endm
 
 	registertiles Tileset,$a1
 	registertiles Blacktile,1

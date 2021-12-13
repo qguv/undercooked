@@ -35,7 +35,7 @@ section "ROM SMT",ROM0
 	dw	StarAnimTab,RStarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$2e,$6d				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-main_char_smt_entry: macro
+macro main_char_smt_entry
 
 	; cat left ear
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
@@ -93,7 +93,7 @@ main_char_smt_entry: macro
 	dw	\1LegAnimTab,\1RLegAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
-	endm
+endm
 
 	main_char_smt_entry Southward
 	main_char_smt_entry Westward
@@ -120,7 +120,7 @@ RStarAttrTab:
 
 ; TODO find some way to deal with tilemap files that assume the first tile in the sprite is tile 0. maybe even a preprocessing recipe to add a constant to each byte in the file? idk
 
-main_char_tables: macro
+macro main_char_tables
 \1EarAnimTab:
 	db \1BeginIndex+0
 	db \1BeginIndex+4
@@ -157,7 +157,7 @@ main_char_tables: macro
 \1RLegAttrTab:
 	db OAMF_XFLIP,OAMF_XFLIP,OAMF_XFLIP,0
 
-	endm
+endm
 
 	main_char_tables Southward
 	main_char_tables Westward

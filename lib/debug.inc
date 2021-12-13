@@ -3,14 +3,14 @@ def DEBUG_INC = 1
 
 ; Prints a message to the no$gmb / bgb debugger
 ; Accepts a string as input, see emulator doc for support
-DBGMSG: MACRO
+macro debug
         ld  d, d
         jr .end\@
-        DW $6464
-        DW $0000
-        DB \1
+        dw $6464
+        dw $0000
+        db \1
 .end\@:
-        ENDM
+endm
 
 endc ; !def(DEBUG_INC)
 

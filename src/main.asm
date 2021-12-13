@@ -130,7 +130,7 @@ begin::
 
 def vram_addr = _TILE0
 
-LoadTiles: macro
+macro LoadTiles
 	ld	hl,\1
 	ld	de,vram_addr
 def size = (\2) * SCRN_TILE_B
@@ -140,7 +140,7 @@ def vram_addr = vram_addr + size
 	if TWO_TILE_ALIGN
 def vram_addr = vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	endc
-	endm
+endm
 
 	; write tiles from ROM into tile memory
 	LoadTiles Tileset,TilesetFrames
