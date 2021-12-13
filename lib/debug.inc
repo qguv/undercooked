@@ -1,5 +1,5 @@
-IF !DEF(DEBUG_INC)
-DEBUG_INC SET 1
+if !def(DEBUG_INC)
+def DEBUG_INC = 1
 
 ; Prints a message to the no$gmb / bgb debugger
 ; Accepts a string as input, see emulator doc for support
@@ -12,6 +12,6 @@ DBGMSG: MACRO
 .end\@:
         ENDM
 
-ENDC ; DEBUG_INC
+endc ; !def(DEBUG_INC)
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

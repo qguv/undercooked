@@ -128,17 +128,17 @@ begin::
 	ld	bc,16
 	call	mem_Copy
 
-vram_addr set _TILE0
+def vram_addr = _TILE0
 
 LoadTiles: macro
 	ld	hl,\1
 	ld	de,vram_addr
-size	set	(\2) * SCRN_TILE_B
+def size = (\2) * SCRN_TILE_B
 	ld	bc,size
 	call	mem_Copy
-vram_addr set vram_addr+size
+def vram_addr = vram_addr + size
 	if TWO_TILE_ALIGN
-vram_addr set vram_addr + vram_addr % (2 * SCRN_TILE_B)
+def vram_addr = vram_addr + vram_addr % (2 * SCRN_TILE_B)
 	endc
 	endm
 

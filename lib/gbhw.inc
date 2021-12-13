@@ -8,8 +8,8 @@
 
 ; If all of these are already defined, don't do it again.
 
-        IF      !DEF(HARDWARE_INC)
-HARDWARE_INC  SET  1
+if !def(HARDWARE_INC)
+def HARDWARE_INC = 1
 
 rev_Check_hardware_inc: MACRO
 ;NOTE: REVISION NUMBER CHANGES MUST BE ADDED
@@ -655,6 +655,6 @@ ROM_HEADER:   MACRO
 
         ENDM
 
-        ENDC    ;HARDWARE_INC
+endc ; !def(HARDWARE_INC)
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

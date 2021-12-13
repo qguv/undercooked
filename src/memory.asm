@@ -7,8 +7,8 @@
 
 ;If all of these are already defined, don't do it again.
 
-        IF      !DEF(MEMORY1_ASM)
-MEMORY1_ASM  SET  1
+if !def(MEMORY1_ASM)
+def MEMORY1_ASM = 1
 
 rev_Check_memory1_asm: MACRO
 ;NOTE: REVISION NUMBER CHANGES MUST BE ADDED
@@ -156,6 +156,6 @@ mem_CopyVRAM::
 
         POPS           ; Pop the current section off of assember stack.
 
-        ENDC    ;MEMORY1_ASM
+endc ; !def(MEMORY1_ASM)
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

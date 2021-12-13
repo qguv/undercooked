@@ -2,15 +2,15 @@ TWO_TILE_ALIGN equ 0		; whether to align tiles so each new one starts on even-nu
 LEVEL_WIDTH equ 40
 LEVEL_HEIGHT equ 18		; TODO redefine in terms of ((TilemapEnd - Tilemap) / LEVEL_WIDTH)
 
-TILE_NUM set 0
+def TILE_NUM = 0
 
 ; label name, number of frames, tiles per frame
 registertiles: macro
 \1Frames equ (\2)
 \1BeginIndex equ TILE_NUM
-TILE_NUM set TILE_NUM + \1Frames
+def TILE_NUM = TILE_NUM + \1Frames
 if TWO_TILE_ALIGN
-TILE_NUM set TILE_NUM + (TILE_NUM % 2)
+def TILE_NUM = TILE_NUM + (TILE_NUM % 2)
 endc
 	endm
 
