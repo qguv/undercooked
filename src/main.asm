@@ -9,14 +9,6 @@ section "init",ROM0[$100]
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-;------------------------,
-; Configurable constants ;
-;________________________'
-
-CHARACTER_HEIGHT equ 4
-COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
-SONG_LENGTH equ 32		; number of NOTES not BYTES
-
 ;-----------------------------;
 ; OAM DMA (put this in HIRAM) ;
 ;_____________________________;
@@ -55,12 +47,6 @@ lfooty:		db		; y position of left foot wrt the map, 0 is the furthest up you can
 
 tmp1:		db
 tmp2:		db
-
-direction:	db		; character look direction: SOUTHWARD, WESTWARD, NORTHWARD, EASTWARD
-SOUTHWARD	equ 0
-WESTWARD	equ 1
-NORTHWARD	equ 2
-EASTWARD	equ 3
 
 ;-------------------,
 ; Allocated Low RAM ;
@@ -142,7 +128,7 @@ begin::
 	ld	bc,16
 	call	mem_Copy
 
-vram_addr set $8000
+vram_addr set _TILE0
 
 LoadTiles: macro
 	ld	hl,\1
@@ -238,7 +224,7 @@ endr
 .wait
 	; wait for vblank
 	halt
-	call    Main
+	call	Input
 	jp	.wait
 
 StopLCD:
@@ -308,257 +294,5 @@ VBlank::
 	pop	bc
 	pop	af
 	reti
-
-Main::
-	ld	a,[duration]
-	cpz
-	jp nz,.scroll_screen		; if the walk cycle isn't over, don't read buttons, just scroll
-
-;walkcycleover
-	call ReadJoypad
-	ld	a,[buttons]
-	and	$f0			; is a movement button held?
-	jp	nz,.parsemovement	; if so, process it
-.haltmovement
-	ldz				; clear out current movement command
-	ld	[dx],a
-	ld	[dy],a
-	jp	.end_movement
-
-.parsemovement				; also does bounds checks
-	ld	a,[buttons]
-	and	PADF_UP | PADF_DOWN	; moving up or down?
-	cpz
-	jp	z,.xmovement
-;ymovement
-	and	PADF_UP			; moving up?
-	cpz
-	jp	nz,.up
-;down
-	ld	a,SOUTHWARD		; turn
-	ld	[direction],a
-	ld	a,[lfooty]		;if you're at the bottom edge, you can't move down
-	cp	LEVEL_HEIGHT - CHARACTER_HEIGHT - 1
-	jp	z,.haltmovement
-	ld	a,1			; move down
-	ld	[dy],a
-	ldz
-	ld	[dx],a
-	jp	.collision
-.up
-	ld	a,NORTHWARD		; turn
-	ld	[direction],a
-	ld	a,[lfooty]		; if you're at the top edge, you can't move up
-	cpz
-	jp	z,.haltmovement
-	ld	a,$ff			; move up
-	ld	[dy],a
-	ldz
-	ld	[dx],a
-	jp	.collision
-.xmovement
-	ld	a,[buttons]
-	and	PADF_LEFT		; moving left?
-	cpz
-	jp	nz,.left
-;right
-	ld	a,EASTWARD		; turn
-	ld	[direction],a
-	ld	a,[lfootx]		; if you're at the rightmost edge, you can't move right
-	cp	LEVEL_WIDTH - 2		; (subtract one to account for your RIGHT foot and one because you need to check it earlier)
-	jp	z,.haltmovement
-	ld	a,1			; move right
-	ld	[dx],a
-	ldz
-	ld	[dy],a
-	jp	.collision
-.left
-	ld	a,WESTWARD		; turn
-	ld	[direction],a
-	ld	a,[lfootx]		; if you're at the leftmost edge, you can't move left
-	cpz
-	jp	z,.haltmovement
-	ld	a,$ff			; move left
-	ld	[dx],a
-	ldz
-	ld	[dy],a
-	;jp	.collision
-
-.collision
-if !COLLISION_DETECTION
-	jp	.collision_end
-endc
-	; at (lfootx,lfooty) we test tilemap entry = firsttile + (40 * lfooty) + lfootx
-	; where firsttile represents the tile (with respect to the "real" tile map)
-	; that your left foot is standing on when you're at the lfoot origin
-	ld	hl,Tilemap	; Tilemap[] -> hl
-	ld	b,0		; firsttile -> bc
-	ld	c,CHARACTER_HEIGHT * LEVEL_WIDTH
-	add	hl,bc		; Tilemap[firsttile] -> hl
-	ld	a,[dx]		; dx -> c
-	ld	c,a
-	ld	a,[lfootx]	; lfootx -> a
-	add	c		; lfootx + dx -> a
-	ld	b,0		; lfootx + dx -> bc
-	ld	c,a
-	add	hl,bc		; hl = Tilemap[firsttile + lfootx + dx]
-	ld	a,[dy]		; dy -> c
-	ld	c,a
-	ld	a,[lfooty]	; lfooty -> a
-	add	c		; lfooty + dy -> a
-	ld	b,0		; 40 -> bc
-	ld	c,40
-	cpz
-	jp	.mulcheck
-.muladd
-	add	hl,bc
-	dec	a
-.mulcheck
-	jp	nz,.muladd
-;mulend				; hl = Tilemap[firsttile + (lfootx + dx) + ((lfooty + dy) * 40)]
-rept 2				; once for each foot
-	ld	a,[hl+]		; left foot tile -> e
-	ld	e,a
-	ld	d,nonlava.end-nonlava	; number of entries in nonlava table
-	ld	bc,nonlava	; nonlava[] -> bc
-.nexttile\@
-	ld	a,[bc]		; nonlava[i] -> a
-	cp	e		; if this tile is a nonlava tile, move onto the next foot
-	jp	z,.nextfoot\@
-	inc	bc		; otherwise, i++
-	dec	d
-	cpz
-	jp	nz,.nexttile\@
-	jp	.haltmovement	; if we run out of tiles without jumping to the next foot, it's lava!
-.nextfoot\@
-endr
-.collision_end
-
-	call	ShowTiles	; load in a new line of tiles if necessary
-
-	; update lfootx and lfooty to new coordinates
-	ld	a,[dx]		; dx -> b
-	ld	b,a
-	ld	a,[lfootx]	; lfootx -> a
-	add	b		; lfootx + dx -> a
-	ld	[lfootx],a	; lfootx += dx
-	ld	a,[dy]		; dy -> b
-	ld	b,a
-	ld	a,[lfooty]	; lfooty -> a
-	add	b		; lfooty + dy -> a
-	ld	[lfooty],a	; lfooty += dy
-
-	; restart animation counter
-	ld	a,8
-	ld	[duration],a
-
-.scroll_screen
-	ld	a,[duration]
-	dec	a
-	ld	[duration],a
-
-	; scroll bg viewport rightward by dx
-	ld	a,[dx]		; dx -> b
-	ld	b,a
-	ld	a,[rSCX]	; rSCX -> a
-	add	b		; rSCX + dx -> a
-	ld	[rSCX],a	; rSCX += dx
-
-.skip_movement
-	; scroll bg viewport downward by dy
-	ld	a,[dy]		; dy -> b
-	ld	b,a
-	ld	a,[rSCY]	; rSCY -> a
-	add	b		; rSCY + dy -> a
-	ld	[rSCY],a	; rSCY += dy
-.end_movement
-
-	call SpriteLoadPlayerCharacter
-	call SpriteUpdateAll
-
-HandleNotes:
-	ld	a,[note_dur]		; if duration of previous note is expired, continue
-	cpz
-	jp	z,.next_note
-	dec	a			; otherwise decrement and return
-	ld	[note_dur],a
-	ret
-.next_note
-	ld	a,[note_swindex]
-	ld	hl,NoteDuration
-	addhla				; add index into note duration table
-	ld	a,[hl]			; set next note duration
-	ld	[note_dur],a
-	ld	a,[note_swindex]	; increase note swing index
-	inc	a
-	cp	NoteDurationEnd-NoteDuration	; wrap if necessary
-	jp	c,.dont_wrap
-	ldz
-.dont_wrap
-	ld	[note_swindex],a
-	ld	a,[note_index]		; get note index
-	cp	a,SONG_LENGTH-1		; if hPU1NoteIndex isn't zero, fine...
-	jp	nz,.sound_registers
-	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
-	ld	[song_repeated],a
-
-pulsenote: macro
-	; index the notes-in-song table with the note song-index to get the actual note value
-	ld	b,0
-	ld	a,[note_index]
-	ld	c,a
-	ld	hl,\1
-	add	hl,bc
-	ld	c,[hl]
-
-	ld	a,c			; if it's a rest (note 0), don't set any registers for this note
-	cpz
-	jp	z,.end\@
-
-	cp	$ff			; if it's a kill command (note $ff), stop the note
-	jp	nz,.nocut\@
-	ldz
-	ld	[\6],a
-	ld	a,$80
-	ld	[\8],a
-	jp	.end\@
-.nocut\@
-
-	; index the note frequency table with the actual note value to get the note frequency (16-bit)
-	ld	b,0
-	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
-	rl	b
-
-	ld	hl,NoteFreqs		; now index the damn table
-	add	hl,bc
-
-	ldz				; disable sweep
-	ld	[\4],a
-	ld	a,\2			; duty cycle (top two) and length (the rest)
-	ld	[\5],a
-	ld	a,\3			; envelope, precisely like LSDj
-	ld	[\6],a
-	ld	a,[hl+]			; freq LSB
-	ld	[\7],a
-	ld	a,[hl]			; freq MSB
-	and	%00000111		; truncate to bits of MSB that are actually used
-	or	%10000000		; reset envelope (not legato)
-	ld	[\8],a			; set frequency MSB and flags
-.end\@
-	endm
-
-.sound_registers
-	pulsenote	NotesPU1,%00111111,$F1,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
-	pulsenote	NotesPU2,%10111111,$C3,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
-
-	ld	a,[note_index]	; increment index of note in song
-	inc	a
-	and	SONG_LENGTH-1
-	ld	[note_index],a
-
-	reti
-
-Wavetable:
-	db $89,$ab,$cd,$ef,$fe,$dc,$ba,$98,$76,$54,$32,$10,$01,$23,$45,$67
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

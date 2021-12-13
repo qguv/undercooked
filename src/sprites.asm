@@ -63,7 +63,7 @@ endr
 SpriteLoadPlayerCharacter:
 ; FIXME new, maybe broken
 	; get index of the ROM SMT entry of the first player character sprite for this direction
-	ld	a,[direction]		; a <- direction * 8 + 2 (index of first sprite ROM SMT index of player character sprites)
+	ld	a,[Direction]		; a <- direction * 8 + 2 (index of first sprite ROM SMT index of player character sprites)
 	sla	a
 	sla	a
 	sla	a

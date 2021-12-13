@@ -1,79 +1,9 @@
-c2_freq equ 44
-cs2_freq equ 156
-d2_freq equ 262
-ds2_freq equ 363
-e2_freq equ 457
-f2_freq equ 547
-fs2_freq equ 631
-g2_freq equ 710
-gs2_freq equ 786
-a2_freq equ 854
-as2_freq equ 923
-b2_freq equ 986
-c3_freq equ 1046
-cs3_freq equ 1102
-d3_freq equ 1155
-ds3_freq equ 1205
-e3_freq equ 1253
-f3_freq equ 1297
-fs3_freq equ 1339
-g3_freq equ 1379
-gs3_freq equ 1417
-a3_freq equ 1452
-as3_freq equ 1486
-b3_freq equ 1517
-c4_freq equ 1546
-cs4_freq equ 1575
-d4_freq equ 1602
-ds4_freq equ 1627
-e4_freq equ 1650
-f4_freq equ 1673
-fs4_freq equ 1694
-g4_freq equ 1714
-gs4_freq equ 1732
-a4_freq equ 1750
-as4_freq equ 1767
-b4_freq equ 1783
+include "lib/gbhw.inc"		; hardware descriptions
+include "src/freqs.inc"		; note frequencies
+include "src/notes.inc"		; note names
+include "src/optim.inc"		; optimized instruction aliases
 
-	rsreset	; this is space-sensitive for literally no reason
-REST	rb 1
-c2	rb 1
-cs2	rb 1
-d2	rb 1
-ds2	rb 1
-e2	rb 1
-f2	rb 1
-fs2	rb 1
-g2	rb 1
-gs2	rb 1
-a2	rb 1
-as2	rb 1
-b2	rb 1
-c3	rb 1
-cs3	rb 1
-d3	rb 1
-ds3	rb 1
-e3	rb 1
-f3	rb 1
-fs3	rb 1
-g3	rb 1
-gs3	rb 1
-a3	rb 1
-as3	rb 1
-b3	rb 1
-c4	rb 1
-cs4	rb 1
-d4	rb 1
-ds4	rb 1
-e4	rb 1
-f4	rb 1
-fs4	rb 1
-g4	rb 1
-gs4	rb 1
-a4	rb 1
-as4	rb 1
-b4	rb 1
-KILL	equ $ff
+SONG_LENGTH equ 32		; number of NOTES not BYTES
 
 section "music",ROM0
 
@@ -107,5 +37,90 @@ NotesWAV:
 NoteDuration: ; in number of vblanks, this table will be cycled
 	db	9, 7
 NoteDurationEnd:
+
+Wavetable:
+	db $89,$ab,$cd,$ef,$fe,$dc,$ba,$98,$76,$54,$32,$10,$01,$23,$45,$67
+
+HandleNotes:
+	ld	a,[note_dur]		; if duration of previous note is expired, continue
+	cpz
+	jp	z,.next_note
+	dec	a			; otherwise decrement and return
+	ld	[note_dur],a
+	ret
+.next_note
+	ld	a,[note_swindex]
+	ld	hl,NoteDuration
+	addhla				; add index into note duration table
+	ld	a,[hl]			; set next note duration
+	ld	[note_dur],a
+	ld	a,[note_swindex]	; increase note swing index
+	inc	a
+	cp	NoteDurationEnd-NoteDuration	; wrap if necessary
+	jp	c,.dont_wrap
+	ldz
+.dont_wrap
+	ld	[note_swindex],a
+	ld	a,[note_index]		; get note index
+	cp	a,SONG_LENGTH-1		; if hPU1NoteIndex isn't zero, fine...
+	jp	nz,.sound_registers
+	ld	a,1			; ...but if it is, the song has repeated and we need to mark that
+	ld	[song_repeated],a
+
+pulsenote: macro
+	; index the notes-in-song table with the note song-index to get the actual note value
+	ld	b,0
+	ld	a,[note_index]
+	ld	c,a
+	ld	hl,\1
+	add	hl,bc
+	ld	c,[hl]
+
+	ld	a,c			; if it's a rest (note 0), don't set any registers for this note
+	cpz
+	jp	z,.end\@
+
+	cp	$ff			; if it's a kill command (note $ff), stop the note
+	jp	nz,.nocut\@
+	ldz
+	ld	[\6],a
+	ld	a,$80
+	ld	[\8],a
+	jp	.end\@
+.nocut\@
+
+	; index the note frequency table with the actual note value to get the note frequency (16-bit)
+	ld	b,0
+	sla	c			; double the index (16-bit), sla+rl together represents a 16-bit left shift
+	rl	b
+
+	ld	hl,NoteFreqs		; now index the damn table
+	add	hl,bc
+
+	ldz				; disable sweep
+	ld	[\4],a
+	ld	a,\2			; duty cycle (top two) and length (the rest)
+	ld	[\5],a
+	ld	a,\3			; envelope, precisely like LSDj
+	ld	[\6],a
+	ld	a,[hl+]			; freq LSB
+	ld	[\7],a
+	ld	a,[hl]			; freq MSB
+	and	%00000111		; truncate to bits of MSB that are actually used
+	or	%10000000		; reset envelope (not legato)
+	ld	[\8],a			; set frequency MSB and flags
+.end\@
+	endm
+
+.sound_registers
+	pulsenote	NotesPU1,%00111111,$F1,rAUD1SWEEP,rAUD1LEN,rAUD1ENV,rAUD1LOW,rAUD1HIGH
+	pulsenote	NotesPU2,%10111111,$C3,rAUD2LOW,rAUD2LEN,rAUD2ENV,rAUD2LOW,rAUD2HIGH ; TODO: skip sweep appropriately
+
+	ld	a,[note_index]	; increment index of note in song
+	inc	a
+	and	SONG_LENGTH-1
+	ld	[note_index],a
+
+	ret
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
