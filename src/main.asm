@@ -5,7 +5,7 @@ include "src/tiles.inc"		; tile constants
 
 section "init",ROM0[$100]
 	nop
-	jp	begin
+	jp	setup
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
@@ -66,7 +66,7 @@ SMT_RAM:	ds SMT_RAM_ENTRIES * SMT_RAM_BYTES
 
 section "main",ROM0
 
-begin::
+setup::
 	di
 	ld	sp,$e000	; use lowram for stack
 	call	StopLCD
@@ -221,11 +221,8 @@ endr
 	ld	[rIE],a
 	ei
 
-.wait
-	; wait for vblank
-	halt
-	call	Input
-	jp	.wait
+	; start game loop (begin_main.asm) or run tests (begin_test.asm)
+	jp	Begin
 
 StopLCD:
 	ld	a,[rLCDC]

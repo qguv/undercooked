@@ -2,7 +2,7 @@ name: build
 on: push
 jobs:
 
-  test-build-system:
+  test-jinja2:
     runs-on: ubuntu-20.04
     steps:
 
@@ -72,9 +72,9 @@ jobs:
         working-directory: undercooked
         run: ./configure
 
-      - name: Build undercooked
+      - name: Build undercooked ROM
         working-directory: undercooked
-        run: ninja
+        run: ninja obj/main.gb
 
       - name: Move undercooked ROM into project directory
         working-directory: undercooked
@@ -85,6 +85,20 @@ jobs:
         with:
           name: undercooked_${{ github.sha }}.gb
           path: undercooked/undercooked_${{ github.sha }}.gb
+
+      - name: Build undercooked test ROM
+        working-directory: undercooked
+        run: ninja obj/test.gb
+
+      - name: Move undercooked test ROM into project directory
+        working-directory: undercooked
+        run: mv obj/test.gb undercooked_${{ github.sha }}_test.gb
+
+      - name: Upload undercooked test ROM as build artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: undercooked_${{ github.sha }}_test.gb
+          path: undercooked/undercooked_${{ github.sha }}_test.gb
 
       - name: Upload remaining undercooked build artifacts
         uses: actions/upload-artifact@v1

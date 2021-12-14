@@ -8,7 +8,7 @@ rule self
 
 rule rgbasm
   description = assemble $out
-  command = rgbasm -E -o $out $in
+  command = rgbasm -Weverything -Werror -E -o $out $in
 
 rule rgblink
   description = link $out
@@ -105,7 +105,8 @@ build obj/{{ f }}_4col.png: restrict_colors art/{{ f }}.png | art/bg_palette.png
 build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
 ## endfor
 
-build obj/main.raw.gb | obj/main.sym: rgblink $
+## for target in ["main", "test"]
+build obj/{{ target }}.raw.gb | obj/{{ target }}.sym: rgblink $
     obj/bg.o $
     obj/input.o $
     obj/interrupts.o $
@@ -114,10 +115,12 @@ build obj/main.raw.gb | obj/main.sym: rgblink $
     obj/smt.o $
     obj/sprites.o $
     obj/tiles.o $
+    obj/begin_{{ target }}.o $
     obj/main.o
-  symbols = obj/main.sym
+  symbols = obj/{{ target }}.sym
 
-build obj/main.gb: rgbfix obj/main.raw.gb
+build obj/{{ target }}.gb: rgbfix obj/{{ target }}.raw.gb
+## endfor
 
 default obj/main.gb
 
