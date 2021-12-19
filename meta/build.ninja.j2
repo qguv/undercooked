@@ -63,7 +63,7 @@ rule deps2dd
   description = convert Make dependency syntax into ninja dyndep syntax $out
   command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
 
-build | build.ninja: self | meta/build.ninja.j2 configure
+build | build.ninja: self | meta/build.ninja.j2 meta/jinja2_render.py configure
 
 ## for f in inner_glob('src/*.asm')
 build obj/{{ f }}.deps: rgbasm_deps src/{{ f }}.asm
