@@ -20,7 +20,7 @@ Input::
 	jp nz,.scroll_screen		; if the walk cycle isn't over, don't read buttons, just scroll
 
 ;walkcycleover
-	call ReadJoypad
+	call read_joypad
 	ld	a,[buttons]
 	and	$f0			; is a movement button held?
 	jp	nz,.parsemovement	; if so, process it
@@ -182,5 +182,35 @@ endr
 	call SpriteUpdateAll
 	jp HandleNotes
 	;ret
+
+; directly from GB CPU manual
+read_joypad:
+	ld	a,P1F_5		; bit 5 = $20
+	ld	[rP1],A		; select P14 by setting it low
+	ld	A,[rP1]
+	ld	A,[rP1]		; wait a few cycles
+	cpl			; complement A
+	and	$0F		; get only first 4 bits
+	swap	A		; swap it
+	ld	B,A		; store A in B
+	ld	A,P1F_4
+	ld	[rP1],A		; select P15 by setting it low
+rept 6
+	ld	A,[rP1]		; Wait a few MORE cycles
+endr
+	cpl			; complement (invert)
+	and	$0F		; get first 4 bits
+	or	B		; put A and B together
+
+	;ld	B,A		; store A in D
+	;ld	A,[buttons_old]	; read old joy data from ram
+	;xor	B		; toggle w/current button bit
+	;and	B		; get current button bit back
+	ld	[buttons],A	; save in new Joydata storage
+	;ld	A,B		; put original value in A
+	;ld	[buttons_old],A	; store it as old joy data
+	ld	A,P1F_5|P1F_4	; deselect P14 and P15
+	ld	[rP1],A		; RESET Joypad
+	ret			; Return from Subroutine
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:

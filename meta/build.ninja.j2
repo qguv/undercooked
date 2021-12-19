@@ -108,6 +108,7 @@ build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
 ## for target in ["main", "test"]
 build obj/{{ target }}.raw.gb | obj/{{ target }}.sym: rgblink $
     obj/bg.o $
+    obj/dma.o $
     obj/input.o $
     obj/interrupts.o $
     obj/memory.o $

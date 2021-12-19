@@ -9,21 +9,6 @@ section "init",ROM0[$100]
 
 	ROM_HEADER ROM_MBC1_RAM_BAT, ROM_SIZE_32KBYTE, RAM_SIZE_8KBYTE
 
-;-----------------------------;
-; OAM DMA (put this in HIRAM) ;
-;_____________________________;
-
-DMACode:
-load "DMA",HRAM
-DMA:				; 5 bytes total	9 clocks total
-	ldh [c],a		; 1 byte	2 clocks
-.loop
-	dec b			; 1 byte	1 clock
-	jr nz,.loop		; 2 bytes	2 clocks
-	ret			; 1 byte	4 clocks
-.end
-endl
-
 ;----------------,
 ; Allocated HRAM ;
 ;________________'
@@ -221,6 +206,9 @@ endr
 	ld	[rIE],a
 	ei
 
+	; sleep CPU until vblank
+	halt
+
 	; start game loop (begin_main.asm) or run tests (begin_test.asm)
 	jp	Begin
 
@@ -241,55 +229,5 @@ StopLCD:
 	ld	[rLCDC],a
 
 	ret
-
-; directly from GB CPU manual
-ReadJoypad:
-	ld	a,P1F_5		; bit 5 = $20
-	ld	[rP1],A		; select P14 by setting it low
-	ld	A,[rP1]
-	ld	A,[rP1]		; wait a few cycles
-	cpl			; complement A
-	and	$0F		; get only first 4 bits
-	swap	A		; swap it
-	ld	B,A		; store A in B
-	ld	A,P1F_4
-	ld	[rP1],A		; select P15 by setting it low
-rept 6
-	ld	A,[rP1]		; Wait a few MORE cycles
-endr
-	cpl			; complement (invert)
-	and	$0F		; get first 4 bits
-	or	B		; put A and B together
-
-	;ld	B,A		; store A in D
-	;ld	A,[buttons_old]	; read old joy data from ram
-	;xor	B		; toggle w/current button bit
-	;and	B		; get current button bit back
-	ld	[buttons],A	; save in new Joydata storage
-	;ld	A,B		; put original value in A
-	;ld	[buttons_old],A	; store it as old joy data
-	ld	A,P1F_5|P1F_4	; deselect P14 and P15
-	ld	[rP1],A		; RESET Joypad
-	ret			; Return from Subroutine
-
-; Initiate a DMA transfer from OAM_BUF to the real OAM. The vblank period is
-; the only time we can do this without bugs. Called each frame by the vblank
-; interrupt.
-VBlank::
-	push	af
-	push	bc
-	push	de
-	push	hl
-
-	; start OAM DMA
-	ld a, OAM_BUF / $100
-	ld bc,$2946		; b: wait time, c: OAM trigger
-	call DMA
-
-	pop	hl
-	pop	de
-	pop	bc
-	pop	af
-	reti
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
