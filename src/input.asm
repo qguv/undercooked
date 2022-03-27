@@ -6,6 +6,7 @@ CHARACTER_HEIGHT equ 4
 COLLISION_DETECTION equ 1	; whether to enable collision detection with the environment (bounds checking is always performed)
 
 section "input variables",HRAM
+buttons:	db		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 Direction:	db		; character look direction: SOUTHWARD, WESTWARD, NORTHWARD, EASTWARD
 SOUTHWARD	equ 0
 WESTWARD	equ 1

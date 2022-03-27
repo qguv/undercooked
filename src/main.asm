@@ -14,7 +14,6 @@ section "init",ROM0[$100]
 ;________________'
 
 section "hram vars",HRAM
-buttons:	db		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated:	db		; when the song repeats for the first time, start scrolling
 spr_index:	db		; used to loop through animating/moving sprites
 note_dur:	db		; counter for frames within note
