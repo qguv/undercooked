@@ -9,6 +9,7 @@ ninja "$ROM" >&2
 
 [ -e obj/debugmsg.txt ] && rm obj/debugmsg.txt
 
+BGB_SAVE_CONFIG=false \
 BGB_DEBUGMSG_DIR=obj \
 bgb -nobatt -set StartDebug=0 -set DebugMsgFile=1 -set DebugEcho=1 "$ROM" 2>/dev/null
 
