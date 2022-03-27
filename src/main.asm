@@ -83,17 +83,17 @@ setup::
 	ld	bc,160
 	call	mem_Set
 
+	; zero out HRAM
+	ldz
+	ld	hl,startof("variables")
+	ld	bc,sizeof("variables")
+	call	mem_Set
+
 	; copy DMA code to hram
 	ld	hl,DMACode
 	ld	de,DMA
 	ld	bc,sizeof("DMA")
 	call	mem_Copy
-
-	; zero out allocated HRAM
-	ldz
-	ld	hl,startof("variables")
-	ld	bc,sizeof("variables")
-	call	mem_Set
 
 	; enable sound registers
 	ld	a,%10000000		; enable sound
