@@ -13,7 +13,7 @@ section "init",ROM0[$100]
 ; Allocated HRAM ;
 ;________________'
 
-section "variables",HRAM
+section "hram vars",HRAM
 buttons:	db		; bitmask of which buttons are being held, $10 right, $20 left, $40 up, $80 down
 song_repeated:	db		; when the song repeats for the first time, start scrolling
 spr_index:	db		; used to loop through animating/moving sprites
@@ -85,8 +85,8 @@ setup::
 
 	; zero out HRAM
 	ldz
-	ld	hl,startof("variables")
-	ld	bc,sizeof("variables")
+	ld	hl,startof("hram vars")
+	ld	bc,sizeof("hram vars")
 	call	mem_Set
 
 	; copy DMA code to hram
