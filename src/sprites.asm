@@ -14,12 +14,12 @@ LoadSprite__b_c:
 .mcheck					; loop {
 	ld	a,b			;	if source index == 0; break
 	cpz
-	jp	z,.mcheck
+	jp	z,.mend
 
 	ld	a,SMT_ROM_BYTES		;	hl <- hl + SMT_ROM_BYTES
 	addhla
 	dec	b
-	jp	.mend			; }
+	jp	.mcheck			; }
 .mend
 	push	hl
 
@@ -74,10 +74,11 @@ SpriteLoadPlayerCharacter:
 rept SMT_PLAYER_CHARACTER_ENTRIES
 	push	bc
 	call	LoadSprite__b_c
+	pop	bc
 	inc	b
 	inc	c
-	pop	bc
 endr
+	ret
 
 ; Set a sprite's tile index and attributes in the OAM buffer from its (RAM) SMT state.
 ; arg a: sprite index in RAM SMT
