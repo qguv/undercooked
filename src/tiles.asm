@@ -8,10 +8,7 @@ Blacktile:
 Tileset:	incbin "obj/house.2bpp"
 Tilemap:	incbin "obj/house.tilemap"
 Star:		incbin "obj/star.2bpp"
-Southward:	incbin "obj/southward.2bpp"
-Westward:	incbin "obj/westward.2bpp"
-Northward:	incbin "obj/northward.2bpp"
-Eastward:	incbin "obj/eastward.2bpp"
+Cat:		incbin "obj/cat.2bpp"
 
 ; the tile indices of all the bg tiles you should be able to walk on
 nonlava:

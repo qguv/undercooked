@@ -34,9 +34,9 @@ rule fix_width
   description = quantize image width $out
   command = convert $in -sample 16 $out
 
-rule stack_frames
-  description = vertically stack animation frames into a flat image $out
-  command = convert -coalesce $in -append $out
+rule spritesheet
+  description = convert animated sprite $in into spritesheet $out, where each tile in a row is a frame of the animation for one tile
+  command = meta/.venv/bin/python spritesheet.py $in > $out
 
 rule count_frames
   description = count frames of animation $out
@@ -81,8 +81,15 @@ build obj/{{ f }}_4col.png: fix_white_foreground art/{{ f }}_4col_wfg.png
 build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
 ## endfor
 
+build obj/cat_3col_sprite.png: spritesheet obj/southward_3col_sprite.png obj/westward_3col_sprite.png obj/eastward_3col_sprite.png obj/northward_3col_sprite.png
+## for f in ["cat"]
+build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_3col_sprite.png
+  tilemap = obj/{{ f }}.tilemap
+  attrmap = obj/{{ f }}.attrmap
+## endfor
+
 ## for f in inner_glob('art/*_sprite_wfg_to16.gif')
-build obj/{{ f }}_sprite_wfg_to16.png: stack_frames art/{{ f }}_sprite_wfg_to16.gif
+build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
 build obj/{{ f }}_3col_sprite_wfg.png: restrict_colors obj/{{ f }}_sprite_wfg.png | art/sprite_palette.png
   palette = art/sprite_palette.png

@@ -132,7 +132,7 @@ endm
 	LoadTiles Tileset,TilesetFrames
 	LoadTiles Blacktile,BlacktileFrames
 	LoadTiles Star,StarFrames
-	LoadTiles Southward,SouthwardFrames
+	LoadTiles Cat,CatFrames
 
 if TilesetBeginIndex != 0
 	fail "the first tiles in tile memory must be the tileset used by the tilemap!"

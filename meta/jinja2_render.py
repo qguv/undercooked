@@ -67,7 +67,7 @@ def cwd(path):
     if path is None:
         yield
         return
-    oldpwd=os.getcwd()
+    oldpwd = os.getcwd()
     os.chdir(path)
     try:
         yield
@@ -76,7 +76,11 @@ def cwd(path):
 
 
 def jinja2_render(infile, outfile, chdir=None):
-    env = jinja2.Environment(keep_trailing_newline=True, autoescape=False, line_statement_prefix="##")
+    env = jinja2.Environment(
+        keep_trailing_newline=True,
+        autoescape=False,
+        line_statement_prefix="##",
+    )
     src = infile.read()
     template = env.from_string(src)
     with cwd(chdir):
