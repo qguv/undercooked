@@ -83,11 +83,13 @@ setup::
 	ld	bc,160
 	call	mem_Set
 
-	; zero out HRAM
+	; zero out HRAM and interrupt enable flag
 	ldz
-	ld	hl,startof("hram vars")
-	ld	bc,sizeof("hram vars")
-	call	mem_Set
+	ld	c,$80
+.zero_hram_loop
+	ldh	[$ff00+c], a
+	inc	c
+	jp	nz,.zero_hram_loop
 
 	; copy DMA code to hram
 	ld	hl,DMACode
