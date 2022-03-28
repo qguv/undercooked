@@ -1,6 +1,9 @@
 {
 	"editor.tabSize": 8,
 	"editor.insertSpaces": false,
+	"files.associations": {
+		"build.ninja.j2": "ninja"
+	},
 	"rgbdsz80.includePath": ["."],
 	//"rgbdsz80.includeAllDocCommentNewlines": true,
 	"editor.minimap.enabled": false,
