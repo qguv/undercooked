@@ -17,6 +17,6 @@ endm
 	registertiles Tileset,$a1
 	registertiles Blacktile,1
 	registertiles Star,8
-	registertiles Cat,$6b
+	registertiles Cat,$25 ; (southward only)
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
