@@ -32,7 +32,7 @@ rule fix_white_foreground
 
 rule fix_width
   description = quantize image width $out
-  command = convert $in -sample 16 $out
+  command = convert $in -sample 64 $out
 
 rule spritesheet
   description = convert animated sprite $in into spritesheet $out, where each tile in a row is a frame of the animation for one tile
@@ -67,7 +67,7 @@ rule deps2dd
   description = convert Make dependency syntax into ninja dyndep syntax $out
   command = printf "ninja_dyndep_version = 1\nbuild %s: dyndep | %s\n" $target "$$(< $in cut -d':' -f2 | xargs)" > $out
 
-build | build.ninja: self | meta/build.ninja.j2 meta/jinja2_render.py configure
+build | build.ninja: self | meta/build.ninja.j2 meta/jinja2_render.py meta/Pipfile configure
 
 ## for f in inner_glob('src/*.asm')
 build obj/{{ f }}.deps: rgbasm_deps src/{{ f }}.asm
@@ -93,7 +93,7 @@ build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite 
 ## endfor
 
 ## for f in inner_glob('art/*_sprite_wfg_to16.gif')
-build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif
+build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif | meta/spritesheet.py meta/Pipfile
   width = 2
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
 build obj/{{ f }}_3col_sprite_wfg.png: restrict_colors obj/{{ f }}_sprite_wfg.png | art/sprite_palette.png
