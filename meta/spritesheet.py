@@ -4,56 +4,62 @@ import argparse
 import imageio as iio
 import numpy as np
 
-SEP_COLUMNS = 2
-SEP_ROWS = 1
-SEP_FRAMES = 0
+
+def flatten(xss):
+    return [x for xs in xss for x in xs]
 
 
-def fsplit(xss, splits, axis):
-    xss = [np.split(xs, splits, axis=axis) for xs in xss]
-    ret = [x for xs in xss for x in xs]
-
-def spritesheet(tiles_per_row, animation_path):
-    '''Produce an image where each row is all the frames of one subsprite of the animation.'''
-    animated_sprites = get_subsprites(tiles_per_row, animation_path)
-    for sprite_frames in animated_sprites:
-        yield np.concatenate(zip(sprite_frames))
+def separate(xss, splits, axis):
+    return flatten(np.split(xs, splits, axis=axis) for xs in xss)
 
 
-def get_subsprites(tiles_per_row, animation_path):
-    '''Separate a large animated sprite into animated subsprite tiles.'''
-    reader = iio.get_reader(f'{animation_path}')
-    return zip(framesheet(tiles_per_row, frame) for frame in reader)
+def gen_spritesheet(tiles_per_row, data):
+    '''
+    Produce an image with all of the frames of a single subsprite of the
+    animation.
+    '''
 
+    HORIZONTAL = 1
+    VERTICAL = 2
 
-def framesheet(tiles_per_row, frame):
-    h, w, _ = frame.shape
-    tile_width = w / tiles_per_row
+    nframes = len(data)
+    pixels_per_column = len(data[0])
+    pixels_per_row = len(data[0][0])
+    channels = len(data[0][0][0])  # probably 4, rgba
+    tile_width = int(pixels_per_row // tiles_per_row)
     tile_height = tile_width  # for square tiles
+    tiles_per_column = int(pixels_per_column // tile_height)
+    ntiles = tiles_per_row * tiles_per_column
 
-    for tile_row in np.array_split(frame, tile_height):
-        yield from hsplit(tile_row)
+    tile_rows = separate([data], tiles_per_column, HORIZONTAL)
+    sprites = separate(tile_rows, tiles_per_row, VERTICAL)
+    sprite_lines = separate(sprites, tile_height, HORIZONTAL)
 
-
-def hsplit(lines):
-    '''Separate the tiles in a row of square 2d tiles.'''
-
-    tile_height = len(lines)
-    tile_width = tile_height  # for square tiles
-    return zip(np.array_split(line, tile_width) for line in lines)
+    return np.array(sprite_lines).reshape((
+        ntiles * tile_height,
+        nframes * tile_width,
+        channels,
+    ))
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('GIF')
+    parser.add_argument('GIF', help="animation to convert")
     parser.add_argument(
-        '-w',
-        '--width',
+        '--width', type=int,
         required=True,
         help="width of sprite, in 8x8 tiles",
+    )
+    parser.add_argument(
+        '--output',
+        required=True,
+        help="path the spritesheet will be generated",
     )
     return parser.parse_args()
 
 
 args = parse_args()
-spritesheet(args.width, args.GIF)
+data = np.array(list(iio.get_reader(f'{args.GIF}')))
+sheet = gen_spritesheet(args.width, data)
+with iio.get_writer(f'{args.output}') as w:
+    w.append_data(sheet)
