@@ -132,6 +132,8 @@ endm
 	LoadTiles Tileset,TilesetFrames
 	LoadTiles Blacktile,BlacktileFrames
 	LoadTiles Star,StarFrames
+
+	; TODO: only load tiles for the current animation frame (!!!)
 	LoadTiles Cat,CatFrames
 
 if TilesetBeginIndex != 0

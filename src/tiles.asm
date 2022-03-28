@@ -9,6 +9,8 @@ Tileset:	incbin "obj/house.2bpp"
 Tilemap:	incbin "obj/house.tilemap"
 Star:		incbin "obj/star.2bpp"
 Cat:		incbin "obj/cat.2bpp"
+Cat_map:	incbin "obj/cat.tilemap"
+Cat_attrs:	incbin "obj/cat.attrmap"
 
 ; the tile indices of all the bg tiles you should be able to walk on
 nonlava:
