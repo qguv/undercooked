@@ -59,7 +59,7 @@ def parse_args():
 
 
 args = parse_args()
-data = np.array(list(iio.get_reader(f'{args.GIF}')))
+data = np.array(list(iio.get_reader(args.GIF)))
 sheet = gen_spritesheet(args.width, data)
 with iio.get_writer(f'{args.output}') as w:
     w.append_data(sheet)

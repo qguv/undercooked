@@ -25,14 +25,14 @@ section "ROM SMT",ROM0
 	db	SMTF_ACTIVE|SMTF_WORLD_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
 	db	2 | (2 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	8,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	StarAnimTab,LStarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	StarAnimTab,AttrNormal8	; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$2e,$5d				; (bytes 8 and 9) y and x position (ROM only)
 
 	; right stove eye
 	db	SMTF_ACTIVE|SMTF_WORLD_FIXED|SMTF_ANIMATED	; (byte 0) SMT flags
 	db	2 | (2 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	8,4				; (byte 2) frames, (byte 3) current/initial frame
-	dw	StarAnimTab,RStarAttrTab	; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	StarAnimTab,AttrXFlip8		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$2e,$6d				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 macro main_char_smt_entry
@@ -112,10 +112,10 @@ StarAnimTab:
 	db StarBeginIndex+6
 	db StarBeginIndex+7
 
-LStarAttrTab:
+AttrNormal8:
 	ds 8,0
 
-RStarAttrTab:
+AttrXFlip8:
 	ds 8,OAMF_XFLIP
 
 ; vim: se ft=rgbds ts=8 sw=8 sts=8 noet:
