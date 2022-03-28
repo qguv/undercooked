@@ -1,0 +1,22 @@
+directional movement stuff:
+    - cat sprites without dedup: 128 tiles (2048 B)
+    - cat sprites with dedup: 107 tiles (1712 B) + map (128 B) + attr table (128 B) = 1968 B
+    - it may not save memory, but it does save VRAM (loaded tiles)
+    - how often should tiles be loaded into VRAM?
+        - load one animation frame at a time; reload every frame if animating?
+        - load all frames of the animation for one direction; reload on direction change?
+
+possible states for an (animated) sprite:
+    - exists in ROM SMT, but not in VRAM
+    - exists in ROM SMT, tiles are loaded in VRAM, but it's not in the RAM SMT or OAM (current situation for inactive directions, but is this ever useful?)
+    - exists in ROM SMT, tiles are loaded in VRAM, and it's in the RAM SMT and OAM
+
+ideas for even more dynamic sprite loading:
+    - when loading a ROM SMT entry into the RAM SMT, load its tiles in the first free VRAM tile, and note this tile offset in the RAM SMT entry
+    - add this tile offset to the lines in the animation table
+    - when unloading a RAM SMT entry, move tiles of later entries over to take up its empty VRAM space, and update the entries to account for the new first tile
+    - `; (byte 8) VRAM index of first loaded tile (RAM only)`
+    - increment `SMT_RAM_BYTES` and fix optimizations
+
+use hardware.inc subtree:
+    https://github.com/gbdev/hardware.inc/tree/a4b15b2d4f5e226164e746d7efd5ec5fb1d8f904
