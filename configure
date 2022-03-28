@@ -23,18 +23,15 @@ if ! hash pipenv 2>/dev/null; then
   pip install -qq pipenv
 fi
 
-(
-  cd meta
-  if ! [ -d .venv ]; then
-    echo installing python deps
-    pipenv install
-  fi
+if ! [ -d meta/.venv/ ]; then
+  echo installing python deps
+  env -C meta/ pipenv install
+fi
 
-  if [ "$1" != --quiet ]; then
-    echo rendering build.ninja
-  fi
-  pipenv run ./jinja2_render.py .. < build.ninja.j2 > ../build.ninja
-)
+if [ "$1" != --quiet ]; then
+  echo rendering build.ninja
+fi
+meta/.venv/bin/python meta/jinja2_render.py < meta/build.ninja.j2 > build.ninja
 
 if [ "$1" != --quiet ]; then
   echo 'build system configured, now run `ninja` to compile'

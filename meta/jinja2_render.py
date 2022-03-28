@@ -3,8 +3,6 @@
 import jinja2
 import sys
 import glob
-import os
-import contextlib
 
 
 def glob_partition(match, pattern):
@@ -62,19 +60,6 @@ def inner_glob(pattern):
         yield inner
 
 
-@contextlib.contextmanager
-def cwd(path):
-    if path is None:
-        yield
-        return
-    oldpwd = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(oldpwd)
-
-
 def jinja2_render(infile, outfile, chdir=None):
     env = jinja2.Environment(
         keep_trailing_newline=True,
@@ -83,13 +68,9 @@ def jinja2_render(infile, outfile, chdir=None):
     )
     src = infile.read()
     template = env.from_string(src)
-    with cwd(chdir):
-        out = template.render(glob=glob.glob, inner_glob=inner_glob)
+    out = template.render(glob=glob.glob, inner_glob=inner_glob)
     outfile.write(out)
 
 
 if __name__ == "__main__":
-    chdir = None
-    if len(sys.argv) == 2:
-        chdir = sys.argv[1]
-    jinja2_render(sys.stdin, sys.stdout, chdir=chdir)
+    jinja2_render(sys.stdin, sys.stdout)
