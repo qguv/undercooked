@@ -41,64 +41,64 @@ macro main_char_smt_entry
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(0*8),\2+(0*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(0*4),\2+(0*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat right ear
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(1*8),\2+(1*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(1*4),\2+(1*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$4e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat left head
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(2*8),\2+(2*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(2*4),\2+(2*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat right head
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	2,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(3*8),\2+(3*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(3*4),\2+(3*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$56,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat left arm
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(4*8),\2+(4*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(4*4),\2+(4*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat right arm
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(5*8),\2+(5*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(5*4),\2+(5*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$5e,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat left leg
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,0				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(6*8),\2+(6*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(6*4),\2+(6*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$50				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 	; cat right leg
 	db	SMTF_ACTIVE|SMTF_SCREEN_FIXED|SMTF_PLAYER	; (byte 0) SMT flags
 	db	7 | (8 << 4)			; (byte 1 low) vblanks between frames (byte 1 high) vblanks left
 	db	4,2				; (byte 2) frames, (byte 3) current/initial frame
-	dw	\1+(7*8),\2+(7*8)		; (bytes 4-5) tiles table (bytes 6-7) flags table
+	dw	\1+(7*4),\2+(7*4)		; (bytes 4-5) tiles table (bytes 6-7) flags table
 	db	$66,$58				; (byte 8, ROM only) y (byte 9, ROM only) x
 
 endm
 
-	main_char_smt_entry Cat_map+(0*8*8), Cat_attrs+(0*8*8)
-	main_char_smt_entry Cat_map+(1*8*8), Cat_attrs+(1*8*8)
-	main_char_smt_entry Cat_map+(2*8*8), Cat_attrs+(2*8*8)
-	main_char_smt_entry Cat_map+(3*8*8), Cat_attrs+(3*8*8)
+	main_char_smt_entry Cat_map+(0*8*4), Cat_attrs+(0*8*4)
+	main_char_smt_entry Cat_map+(1*8*4), Cat_attrs+(1*8*4)
+	main_char_smt_entry Cat_map+(2*8*4), Cat_attrs+(2*8*4)
+	main_char_smt_entry Cat_map+(3*8*4), Cat_attrs+(3*8*4)
 
 section "animation tables",ROM0
 

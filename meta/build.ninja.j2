@@ -103,7 +103,7 @@ build obj/cat_offset_170.tilemap: offset obj/cat.tilemap
 build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif | meta/spritesheet.py meta/Pipfile
   width = 2
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
-  width = 128
+  width = 32
 build obj/{{ f }}_3col_sprite_wfg.png: restrict_colors obj/{{ f }}_sprite_wfg.png | art/sprite_palette.png
   palette = art/sprite_palette.png
 build obj/{{ f }}_3col_sprite.png: fix_white_foreground obj/{{ f }}_3col_sprite_wfg.png
