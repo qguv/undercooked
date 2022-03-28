@@ -31,8 +31,8 @@ rule fix_white_foreground
   command = convert $in -fuzz 2% -fill "#eeeeee" -opaque white -background white -alpha remove $out
 
 rule fix_width
-  description = quantize image width $out
-  command = convert $in -sample 64 $out
+  description = quantize image width $out to $width
+  command = convert $in -sample $width $out
 
 rule spritesheet
   description = convert animated sprite $in into spritesheet $out, where each tile in a row is a frame of the animation for one tile
@@ -103,6 +103,7 @@ build obj/cat_offset_170.tilemap: offset obj/cat.tilemap
 build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif | meta/spritesheet.py meta/Pipfile
   width = 2
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
+  width = 128
 build obj/{{ f }}_3col_sprite_wfg.png: restrict_colors obj/{{ f }}_sprite_wfg.png | art/sprite_palette.png
   palette = art/sprite_palette.png
 build obj/{{ f }}_3col_sprite.png: fix_white_foreground obj/{{ f }}_3col_sprite_wfg.png
