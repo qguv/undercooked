@@ -2,5 +2,5 @@
 *.sav
 obj/
 build.ninja
-.ninja_log
-.ninja_deps
+meta/.ninja_log
+meta/.ninja_deps
