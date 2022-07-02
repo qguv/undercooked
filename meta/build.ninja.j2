@@ -8,7 +8,11 @@ rule self
 
 rule rgbasm
   description = assemble $out
+## if rgbasm_version < (0, 6, 0)
   command = rgbasm -Weverything -Werror -E -o $out $in
+## else
+  command = rgbasm -H -l -Weverything -Werror -E -o $out $in
+## endif
 
 rule rgblink
   description = link $out

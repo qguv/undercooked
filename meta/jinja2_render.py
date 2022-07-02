@@ -3,6 +3,7 @@
 import jinja2
 import sys
 import glob
+import subprocess
 
 
 def glob_partition(match, pattern):
@@ -60,6 +61,21 @@ def inner_glob(pattern):
         yield inner
 
 
+def rgbasm_version():
+    return tuple(
+        int(n)
+        for n in (
+            subprocess.check_output(('rgbasm', '--version'))
+                .decode('utf-8')
+                .split(' v', maxsplit=1)[1]
+                .split('-', maxsplit=1)[0]
+                .split('.')
+        )
+    )
+    version, _, suffix = version.partition('-')
+    version = tuple(int(n) for n in version)
+
+
 def jinja2_render(infile, outfile, chdir=None):
     env = jinja2.Environment(
         keep_trailing_newline=True,
@@ -68,7 +84,7 @@ def jinja2_render(infile, outfile, chdir=None):
     )
     src = infile.read()
     template = env.from_string(src)
-    out = template.render(glob=glob.glob, inner_glob=inner_glob)
+    out = template.render(glob=glob.glob, inner_glob=inner_glob, rgbasm_version=rgbasm_version())
     outfile.write(out)
 
 
