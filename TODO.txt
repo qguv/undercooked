@@ -20,3 +20,11 @@ ideas for even more dynamic sprite loading:
 
 use hardware.inc subtree:
     https://github.com/gbdev/hardware.inc/tree/a4b15b2d4f5e226164e746d7efd5ec5fb1d8f904
+
+testing:
+    - each test contains:
+        - an alternative definition of Begin
+        - a file of expected output (will be created at first run if it doesn't exist)
+            - should NOT contain failures
+            - SHOULD contain a final debug print at the end
+        - a screenshot of expected output (will be created at first run if it doesn't exist)

@@ -77,20 +77,43 @@ rule deps2dd
 
 build | build.ninja: self | meta/build.ninja.j2 meta/jinja2_render.py meta/Pipfile configure
 
-## for f in inner_glob('src/*.asm')
-build obj/{{ f }}.deps: rgbasm_deps src/{{ f }}.asm
+# assemble sources into objects
+## for prefix, f, _ in inner_globs('src/*.asm', 'tests/**/*.asm')
+
+# {{ prefix }}{{ f }}.asm -> obj/{{ f }}.o
+build obj/{{ f }}.deps: rgbasm_deps {{ prefix }}{{ f }}.asm
 build obj/{{ f }}.dd: deps2dd obj/{{ f }}.deps
   target = obj/{{ f }}.o
-
-build obj/{{ f }}.o: rgbasm src/{{ f }}.asm || obj/{{ f }}.dd
+build obj/{{ f }}.o: rgbasm {{ prefix }}{{ f }}.asm || obj/{{ f }}.dd
   dyndep = obj/{{ f }}.dd
+
 ## endfor
 
-## for f in inner_glob('art/*_wfg.png')
+# link entry points
+## for prefix, f, _ in inner_globs('src/*.asm', 'tests/**/*.asm')
+# FIXME
+
+# {{ prefix }}{{ f }}.asm -> obj/{{ f }}.gb
+build obj/{{ f }}.raw.gb | obj/{{ f }}.sym: rgblink $
+## for _, src, _ in inner_globs('src/*.asm')
+## if prefix == 'src' or not src.startswith('_')
+    obj/{{ src }}.o $
+## endif
+## endfor
+    obj/{{ f }}.o
+  symbols = obj/{{ f }}.sym
+build obj/{{ f }}.gb: rgbfix obj/{{ f }}.raw.gb
+
+## endfor
+
+## for _, f, _ in inner_globs('art/*_wfg.png')
+
+# art/{{ f }}_wfg.png -> obj/{{ f }}_4col_wfg.png
 build obj/{{ f }}_4col_wfg.png: restrict_colors art/{{ f }}_wfg.png | art/bg_palette.png
   palette = art/bg_palette.png
 build obj/{{ f }}_4col.png: fix_white_foreground art/{{ f }}_4col_wfg.png
 build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
+
 ## endfor
 
 build obj/cat_3col_sprite.png: stack obj/southward_3col_sprite.png
@@ -103,7 +126,9 @@ build obj/cat_offset_170.tilemap: offset obj/cat.tilemap
   add = 170
 ## endfor
 
-## for f in inner_glob('art/*_sprite_wfg_to16.gif')
+## for _, f, _ in inner_globs('art/*_sprite_wfg_to16.gif')
+
+# art/{{ f }}_sprite_wfg_to16.gif
 build obj/{{ f }}_sprite_wfg_to16.png: spritesheet art/{{ f }}_sprite_wfg_to16.gif | meta/spritesheet.py meta/Pipfile
   width = 2
 build obj/{{ f }}_sprite_wfg.png: fix_width obj/{{ f }}_sprite_wfg_to16.png
@@ -114,37 +139,26 @@ build obj/{{ f }}_3col_sprite.png: fix_white_foreground obj/{{ f }}_3col_sprite_
 build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap obj/{{ f }}.attrmap: rgbgfx_sprite obj/{{ f }}_3col_sprite.png
   tilemap = obj/{{ f }}.tilemap
   attrmap = obj/{{ f }}.attrmap
+
 ## endfor
 
-## for f in inner_glob('art/*_bg.png')
+## for _, f, _ in inner_globs('art/*_bg.png')
+
+# art/{{ f }}_bg.png
 build obj/{{ f }}_4col_bg.png: restrict_colors art/{{ f }}_bg.png | art/bg_palette.png
   palette = art/bg_palette.png
 build obj/{{ f }}.2bpp | obj/{{ f }}.tilemap: rgbgfx_background obj/{{ f }}_4col_bg.png
   tilemap = obj/{{ f }}.tilemap
+
 ## endfor
 
-## for f in inner_glob('art/*.png')
+## for _, f, _ in inner_globs('art/*.png')
+
+# art/{{ f }}.png
 build obj/{{ f }}_4col.png: restrict_colors art/{{ f }}.png | art/bg_palette.png
   palette = art/bg_palette.png
 build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
-## endfor
 
-## for target in ["main", "test"]
-build obj/{{ target }}.raw.gb | obj/{{ target }}.sym: rgblink $
-    obj/bg.o $
-    obj/dma.o $
-    obj/input.o $
-    obj/interrupts.o $
-    obj/memory.o $
-    obj/music.o $
-    obj/smt.o $
-    obj/sprites.o $
-    obj/tiles.o $
-    obj/begin_{{ target }}.o $
-    obj/main.o
-  symbols = obj/{{ target }}.sym
-
-build obj/{{ target }}.gb: rgbfix obj/{{ target }}.raw.gb
 ## endfor
 
 default obj/main.gb

@@ -55,10 +55,10 @@ def glob_partition(match, pattern):
     return pieces[0], match[len(pieces[0]):-len(pieces[-1])], pieces[-1]
 
 
-def inner_glob(pattern):
-    for result in glob.glob(pattern):
-        _, inner, _ = glob_partition(result, pattern)
-        yield inner
+def inner_globs(*patterns):
+    for pattern in patterns:
+        for result in glob.glob(pattern):
+            yield glob_partition(result, pattern)
 
 
 def rgbasm_version():
@@ -84,7 +84,7 @@ def jinja2_render(infile, outfile, chdir=None):
     )
     src = infile.read()
     template = env.from_string(src)
-    out = template.render(glob=glob.glob, inner_glob=inner_glob, rgbasm_version=rgbasm_version())
+    out = template.render(glob=glob.glob, inner_globs=inner_globs, rgbasm_version=rgbasm_version())
     outfile.write(out)
 
 

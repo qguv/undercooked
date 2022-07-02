@@ -212,7 +212,7 @@ endr
 	; sleep CPU until vblank
 	halt
 
-	; start game loop (begin_main.asm) or run tests (begin_test.asm)
+	; start game loop (src/begin/main.asm) or run tests (tests/**/test_*.asm)
 	jp	Begin
 
 StopLCD:
