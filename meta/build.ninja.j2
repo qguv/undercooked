@@ -16,7 +16,7 @@ rule rgbasm
 
 rule rgblink
   description = link $out
-  command = rgblink --tiny --wramx -n $symbols -o $out $in
+  command = rgblink --tiny --wramx --sym $symbols --map $map -o $out $in
 
 rule rgbfix
   description = adjust checksums $out
@@ -136,7 +136,7 @@ build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
 
 ## for platform in ['gb', 'pocket']
 ## for target in ["main", "test"]
-build obj/{{ target }}.raw.{{ platform }} | obj/{{ target }}.{{ platform }}.sym: rgblink $
+build obj/{{ target }}.raw.{{ platform }} | obj/{{ target }}.{{ platform }}.sym obj/{{ target }}.{{ platform }}.map: rgblink $
     obj/bg.{{ platform }}.o $
     obj/dma.{{ platform }}.o $
     obj/input.{{ platform }}.o $
@@ -149,6 +149,7 @@ build obj/{{ target }}.raw.{{ platform }} | obj/{{ target }}.{{ platform }}.sym:
     obj/begin_{{ target }}.{{ platform }}.o $
     obj/main.{{ platform }}.o
   symbols = obj/{{ target }}.{{ platform }}.sym
+  map = obj/{{ target }}.{{ platform }}.map
 
 build obj/{{ target }}.{{ platform }}: rgbfix obj/{{ target }}.raw.{{ platform }}
 ## endfor
