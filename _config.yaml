@@ -12,3 +12,4 @@ defaults:
     values:
       layout: "post"
       permalink: /play/:title/
+      has_pocket_build: true

@@ -25,7 +25,10 @@ layout: default
 			<a class="post-link" href="{{ post.url | relative_url }}">Undercooked {{ post.title }}</a>
 			<ul>
 				<li><a href="{{ post.url | relative_url }}">in-browser demo</a></li>
-				<li><a href="releases/undercooked_{{ post.title }}.gb">download ROM</a></li>
+				<li><a href="releases/undercooked_{{ post.title }}.gb">download Gameboy ROM</a></li>
+                               {% if post.has_pocket_build %}
+				<li><a href="releases/undercooked_{{ post.title }}.pocket">download Analogue Pocket ROM</a></li>
+                               {% endif %}
 				<li><a href="https://github.com/qguv/undercooked/releases/tag/v{{ post.title }}">release blog post</a></li>
 			</ul>
 		</li>
