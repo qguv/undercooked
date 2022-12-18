@@ -11,7 +11,7 @@
 if !def(HARDWARE_INC)
 def HARDWARE_INC = 1
 
-rev_Check_hardware_inc: MACRO
+MACRO rev_Check_hardware_inc
 ;NOTE: REVISION NUMBER CHANGES MUST BE ADDED
 ;TO SECOND PARAMETER IN FOLLOWING LINE.
         IF      \1 > 1.0      ;PUT REVISION NUMBER HERE
@@ -653,7 +653,7 @@ SCRN_VY_B  EQU  32  ; Virtual height of screen in bytes
 
 SCRN_TILE_B EQU 16
 
-NINTENDO_LOGO:   MACRO
+MACRO NINTENDO_LOGO
 ;*
 ;* Nintendo scrolling logo
 ;* (Code won't work on a real GameBoy)
@@ -663,7 +663,7 @@ NINTENDO_LOGO:   MACRO
  DB $BB,$BB,$67,$63,$6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E
         ENDM
 
-ROM_HEADER:   MACRO
+MACRO ROM_HEADER
 ;*
 ;* Nintendo scrolling logo
 ;* (Code won't work on a real GameBoy)

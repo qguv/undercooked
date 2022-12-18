@@ -10,7 +10,7 @@
 if !def(MEMORY1_ASM)
 def MEMORY1_ASM = 1
 
-rev_Check_memory1_asm: MACRO
+MACRO rev_Check_memory1_asm
 ;NOTE: REVISION NUMBER CHANGES MUST BE ADDED
 ;TO SECOND PARAMETER IN FOLLOWING LINE.
         IF      \1 > 1.0      ; <---- NOTE!!! PUT FILE REVISION NUMBER HERE
@@ -22,7 +22,7 @@ include "lib/gbhw.inc"
 
 ; Macro that pauses until VRAM available.
 
-lcd_WaitVRAM: MACRO
+MACRO lcd_WaitVRAM
         ld      a,[rSTAT]       ; <---+
         and     STATF_BUSY      ;     |
         jr      nz,@-4          ; ----+
