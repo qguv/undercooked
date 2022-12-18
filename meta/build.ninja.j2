@@ -9,9 +9,9 @@ rule self
 rule rgbasm
   description = assemble $out
 ## if rgbasm_version < (0, 6, 0)
-  command = rgbasm -Weverything -Werror -E -o $out $in
+  command = rgbasm $defs -Weverything -Werror -E -o $out $in
 ## else
-  command = rgbasm -H -l -Weverything -Werror -E -o $out $in
+  command = rgbasm $defs -H -l -Weverything -Werror -E -o $out $in
 ## endif
 
 rule rgblink
@@ -20,7 +20,7 @@ rule rgblink
 
 rule rgbfix
   description = adjust checksums $out
-  command = cp $in $out && rgbfix --validate -p 255 $out
+  command = cp $in $out && rgbfix -f hg -p 255 $out
 
 rule rgbgfx
   description = format image for gameboy $out
@@ -78,12 +78,17 @@ rule deps2dd
 build | build.ninja: self | meta/build.ninja.j2 meta/jinja2_render.py meta/Pipfile configure
 
 ## for f in inner_glob('src/*.asm')
-build obj/{{ f }}.deps: rgbasm_deps src/{{ f }}.asm
-build obj/{{ f }}.dd: deps2dd obj/{{ f }}.deps
-  target = obj/{{ f }}.o
+## for platform in ['gb', 'pocket']
+build obj/{{ f }}.{{ platform }}.deps: rgbasm_deps src/{{ f }}.asm
+build obj/{{ f }}.{{ platform }}.dd: deps2dd obj/{{ f }}.{{ platform }}.deps
+  target = obj/{{ f }}.{{ platform }}.o
 
-build obj/{{ f }}.o: rgbasm src/{{ f }}.asm || obj/{{ f }}.dd
-  dyndep = obj/{{ f }}.dd
+build obj/{{ f }}.{{ platform }}.o: rgbasm src/{{ f }}.asm || obj/{{ f }}.{{ platform }}.dd
+## if platform == 'pocket'
+  defs = -D ANALOGUE_POCKET
+## endif
+  dyndep = obj/{{ f }}.{{ platform }}.dd
+## endfor
 ## endfor
 
 ## for f in inner_glob('art/*_wfg.png')
@@ -129,22 +134,24 @@ build obj/{{ f }}_4col.png: restrict_colors art/{{ f }}.png | art/bg_palette.png
 build obj/{{ f }}.2bpp: rgbgfx obj/{{ f }}_4col.png
 ## endfor
 
+## for platform in ['gb', 'pocket']
 ## for target in ["main", "test"]
-build obj/{{ target }}.raw.gb | obj/{{ target }}.sym: rgblink $
-    obj/bg.o $
-    obj/dma.o $
-    obj/input.o $
-    obj/interrupts.o $
-    obj/memory.o $
-    obj/music.o $
-    obj/smt.o $
-    obj/sprites.o $
-    obj/tiles.o $
-    obj/begin_{{ target }}.o $
-    obj/main.o
-  symbols = obj/{{ target }}.sym
+build obj/{{ target }}.raw.{{ platform }} | obj/{{ target }}.{{ platform }}.sym: rgblink $
+    obj/bg.{{ platform }}.o $
+    obj/dma.{{ platform }}.o $
+    obj/input.{{ platform }}.o $
+    obj/interrupts.{{ platform }}.o $
+    obj/memory.{{ platform }}.o $
+    obj/music.{{ platform }}.o $
+    obj/smt.{{ platform }}.o $
+    obj/sprites.{{ platform }}.o $
+    obj/tiles.{{ platform }}.o $
+    obj/begin_{{ target }}.{{ platform }}.o $
+    obj/main.{{ platform }}.o
+  symbols = obj/{{ target }}.{{ platform }}.sym
 
-build obj/{{ target }}.gb: rgbfix obj/{{ target }}.raw.gb
+build obj/{{ target }}.{{ platform }}: rgbfix obj/{{ target }}.raw.{{ platform }}
+## endfor
 ## endfor
 
 default obj/main.gb

@@ -76,6 +76,26 @@ P1F_0   EQU  %00000001 ; P10 in port
 ; -- LCDC ($FF40)
 ; -- LCD Control (R/W)
 ; --
+if def(ANALOGUE_POCKET)
+rLCDC EQU $FF4E
+
+LCDCF_OFF     EQU  %00000000 ; LCD Control Operation
+LCDCF_ON      EQU  %00000001 ; LCD Control Operation
+LCDCF_WIN9800 EQU  %00000000 ; Window Tile Map Display Select
+LCDCF_WIN9C00 EQU  %00000010 ; Window Tile Map Display Select
+LCDCF_WINOFF  EQU  %00000000 ; Window Display
+LCDCF_WINON   EQU  %00000100 ; Window Display
+LCDCF_BG8800  EQU  %00000000 ; BG & Window Tile Data Select
+LCDCF_BG8000  EQU  %00001000 ; BG & Window Tile Data Select
+LCDCF_BG9800  EQU  %00000000 ; BG Tile Map Display Select
+LCDCF_BG9C00  EQU  %00010000 ; BG Tile Map Display Select
+LCDCF_OBJ8    EQU  %00000000 ; OBJ Construction
+LCDCF_OBJ16   EQU  %00100000 ; OBJ Construction
+LCDCF_OBJOFF  EQU  %00000000 ; OBJ Display
+LCDCF_OBJON   EQU  %01000000 ; OBJ Display
+LCDCF_BGOFF   EQU  %00000000 ; BG Display
+LCDCF_BGON    EQU  %10000000 ; BG Display
+else
 rLCDC EQU $FF40
 
 LCDCF_OFF     EQU  %00000000 ; LCD Control Operation
@@ -94,6 +114,7 @@ LCDCF_OBJOFF  EQU  %00000000 ; OBJ Display
 LCDCF_OBJON   EQU  %00000010 ; OBJ Display
 LCDCF_BGOFF   EQU  %00000000 ; BG Display
 LCDCF_BGON    EQU  %00000001 ; BG Display
+endc
 ; "Window Character Data Select" follows BG
 
 
@@ -103,6 +124,18 @@ LCDCF_BGON    EQU  %00000001 ; BG Display
 ; --
 rSTAT EQU $FF41
 
+if def(ANALOGUE_POCKET)
+STATF_LYC     EQU  %00000010 ; LYCEQULY Coincidence (Selectable)
+STATF_MODE10  EQU  %00000100 ; Mode 10
+STATF_MODE01  EQU  %00001000 ; Mode 01 (V-Blank)
+STATF_MODE00  EQU  %00010000 ; Mode 00 (H-Blank)
+STATF_LYCF    EQU  %00100000 ; Coincidence Flag
+STATF_HB      EQU  %00000000 ; H-Blank
+STATF_VB      EQU  %10000000 ; V-Blank
+STATF_OAM     EQU  %01000000 ; OAM-RAM is used by system
+STATF_LCD     EQU  %11000000 ; Both OAM and VRAM used by system
+STATF_BUSY    EQU  %01000000 ; When set, VRAM access is unsafe
+else
 STATF_LYC     EQU  %01000000 ; LYCEQULY Coincidence (Selectable)
 STATF_MODE10  EQU  %00100000 ; Mode 10
 STATF_MODE01  EQU  %00010000 ; Mode 01 (V-Blank)
@@ -113,6 +146,7 @@ STATF_VB      EQU  %00000001 ; V-Blank
 STATF_OAM     EQU  %00000010 ; OAM-RAM is used by system
 STATF_LCD     EQU  %00000011 ; Both OAM and VRAM used by system
 STATF_BUSY    EQU  %00000010 ; When set, VRAM access is unsafe
+endc
 
 
 ; --
@@ -636,9 +670,16 @@ ROM_HEADER:   MACRO
 ;* (if next six lines are altered.)
 
 ;    0123456789ABCDEF
+if def(ANALOGUE_POCKET)
+ DB $01,$10,$CE,$EF,$00,$00,$44,$AA,$00,$74,$00,$18,$11,$95,$00,$34
+ DB $00,$1A,$00,$D5,$00,$22,$00,$69,$6F,$F6,$F7,$73,$09,$90,$E1,$10
+ DB $44,$40,$9A,$90,$D5,$D0,$44,$30,$A9,$21,$5D,$48,$22,$E0,$F8,$60
+else
  DB $CE,$ED,$66,$66,$CC,$0D,$00,$0B,$03,$73,$00,$83,$00,$0C,$00,$0D
  DB $00,$08,$11,$1F,$88,$89,$00,$0E,$DC,$CC,$6E,$E6,$DD,$DD,$D9,$99
  DB $BB,$BB,$67,$63,$6E,$0E,$EC,$CC,$DD,$DC,$99,$9F,$BB,$B9,$33,$3E
+endc
+
 
  DB "UNDERCOOKED",0,0,0,0 ; Cart name - 15bytes
  DB 0                         ; $143

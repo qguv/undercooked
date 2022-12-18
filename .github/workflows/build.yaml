@@ -72,19 +72,33 @@ jobs:
         working-directory: undercooked
         run: ./configure
 
-      - name: Build undercooked ROM
+      - name: Build undercooked ROM for Nintendo Gameboy
         working-directory: undercooked
         run: ninja obj/main.gb
 
-      - name: Move undercooked ROM into project directory
+      - name: Move undercooked GB ROM into project directory
         working-directory: undercooked
         run: mv obj/main.gb undercooked_${{ github.sha }}.gb
 
-      - name: Upload undercooked ROM as build artifact
+      - name: Upload undercooked GB ROM as build artifact
         uses: actions/upload-artifact@v1
         with:
           name: undercooked_${{ github.sha }}.gb
           path: undercooked/undercooked_${{ github.sha }}.gb
+
+      - name: Build undercooked ROM for Analogue Pocket
+        working-directory: undercooked
+        run: ninja obj/main.pocket
+
+      - name: Move undercooked Pocket ROM into project directory
+        working-directory: undercooked
+        run: mv obj/main.pocket undercooked_${{ github.sha }}.pocket
+
+      - name: Upload undercooked ROM as build artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: undercooked_${{ github.sha }}.pocket
+          path: undercooked/undercooked_${{ github.sha }}.pocket
 
       - name: Build undercooked test ROM
         working-directory: undercooked
@@ -120,9 +134,15 @@ jobs:
           replace-with: ''
         id: version
 
-      - uses: actions/download-artifact@v2
+      - name: Download undercooked GB ROM
+        uses: actions/download-artifact@v2
         with:
           name: undercooked_${{ github.sha }}.gb
+
+      - name: Download undercooked Pocket ROM
+        uses: actions/download-artifact@v2
+        with:
+          name: undercooked_${{ github.sha }}.pocket
 
       - name: Create Github release
         uses: actions/create-release@v1
@@ -137,7 +157,7 @@ jobs:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/v0.') }}
         id: create_release
 
-      - name: Upload undercooked ROM as release asset
+      - name: Upload undercooked GB ROM as release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -145,6 +165,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: undercooked_${{ github.sha }}.gb
           asset_name: undercooked_${{ steps.version.outputs.replaced }}.gb
+          asset_content_type: application/octet-stream
+
+      - name: Upload undercooked Pocket ROM as release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: undercooked_${{ github.sha }}.pocket
+          asset_name: undercooked_${{ steps.version.outputs.replaced }}.pocket
           asset_content_type: application/octet-stream
 
   gh-pages-release:
@@ -161,15 +191,22 @@ jobs:
           replace-with: ''
         id: version
 
-      - uses: actions/download-artifact@v2
+      - name: Download undercooked GB ROM
+        uses: actions/download-artifact@v2
         with:
           name: undercooked_${{ github.sha }}.gb
+
+      - name: Download undercooked Pocket ROM
+        uses: actions/download-artifact@v2
+        with:
+          name: undercooked_${{ github.sha }}.pocket
 
       - name: Create new web emulator demo page
         run: |
           mkdir -p gh-pages/_posts gh-pages/releases
           touch "gh-pages/_posts/$(date +%Y-%m-%d-${{ steps.version.outputs.replaced }}.md)"
           mv undercooked_${{ github.sha }}.gb gh-pages/releases/undercooked_${{ steps.version.outputs.replaced }}.gb
+          mv undercooked_${{ github.sha }}.pocket gh-pages/releases/undercooked_${{ steps.version.outputs.replaced }}.pocket
 
       - name: Deploy to github pages
         uses: peaceiris/actions-gh-pages@v3
